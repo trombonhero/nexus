@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NEXUS - Connect the System</title>
     
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Lucide Icons -->
@@ -13,39 +13,32 @@
 
 
     <style>
-        /* Custom Animations not in Tailwind default */
         @keyframes pulse-glow {
             0%, 100% { filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.5)); }
             50% { filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.8)); }
         }
         .animate-glow { animation: pulse-glow 2s infinite; }
         
-        /* Disable selection for game feel */
-        body { user-select: none; -webkit-user-select: none; touch-action: none; }
-        
-        /* Custom Scrollbar hide */
+        body { user-select: none; -webkit-user-select: none; touch-action: none; background-color: #0c0a09; }
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-stone-950 text-stone-200 font-sans h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
+<body class="text-stone-200 font-sans h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
 
 
     <!-- HUD -->
     <div class="absolute top-8 text-center z-10 pointer-events-none">
         <h1 class="text-4xl font-light tracking-[0.3em] text-cyan-500 drop-shadow-lg">NEXUS</h1>
         <p id="status-text" class="mt-2 text-xs font-bold uppercase tracking-widest text-stone-500 transition-colors duration-300">
-            Connetti il sistema
+            Caricamento sistema...
         </p>
     </div>
 
 
     <!-- MAIN GAME AREA -->
     <div class="relative group touch-none">
-        <!-- SVG Container -->
         <div id="game-container" class="relative bg-stone-900 rounded-2xl border border-stone-800 shadow-2xl transition-all duration-300">
-            <svg id="game-canvas" class="block cursor-crosshair" style="touch-action: none;">
-                <!-- Content injected via JS -->
-            </svg>
+            <svg id="game-canvas" class="block cursor-crosshair" style="touch-action: none;"></svg>
         </div>
 
 
@@ -56,7 +49,7 @@
             </div>
             <h2 class="text-3xl font-bold text-white mb-1 tracking-wider">CONNESSO</h2>
             <p class="text-stone-400 text-sm mb-8">Sistema sincronizzato.</p>
-            <button onclick="game.newGame()" class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold shadow-lg shadow-cyan-900/40 transition-all active:scale-95 flex items-center gap-2 pointer-events-auto">
+            <button id="btn-next-level" class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold shadow-lg shadow-cyan-900/40 transition-all active:scale-95 flex items-center gap-2 pointer-events-auto">
                 Prossima Configurazione <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
         </div>
@@ -65,19 +58,20 @@
 
     <!-- CONTROLS -->
     <div class="absolute bottom-8 flex gap-4 z-10">
-        <button onclick="game.newGame()" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Nuova Partita">
+        <button id="btn-reset" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Nuova Partita">
             <i data-lucide="refresh-cw" class="w-5 h-5"></i>
         </button>
-        <button onclick="toggleTutorial()" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Aiuto">
+        <button id="btn-help" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Aiuto">
             <i data-lucide="info" class="w-5 h-5"></i>
         </button>
     </div>
 
 
     <!-- TUTORIAL MODAL -->
-    <div id="tutorial-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
+    <!-- Nota: rimosso 'style' inline e usato classi per gestire visibilità -->
+    <div id="tutorial-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-100">
         <div class="bg-stone-900 border border-stone-800 p-8 rounded-2xl max-w-sm w-full shadow-2xl relative">
-            <button onclick="toggleTutorial()" class="absolute top-4 right-4 text-stone-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button id="btn-close-modal-x" class="absolute top-4 right-4 text-stone-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             
             <div class="flex items-center gap-2 mb-6 text-cyan-400 font-bold text-lg">
                 <i data-lucide="mouse-pointer-2" class="w-5 h-5"></i> Guida Rapida
@@ -86,23 +80,23 @@
             <ul class="space-y-4 text-stone-300 text-sm leading-relaxed mb-8">
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">1</span>
-                    <span><strong>Trascina</strong> da un'isola all'altra per creare un ponte di connessione.</span>
+                    <span><strong>Trascina</strong> da un'isola all'altra per creare un ponte.</span>
                 </li>
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">2</span>
-                    <span>Il numero indica quanti ponti servono a quell'isola.</span>
+                    <span>Il numero indica quanti ponti servono.</span>
                 </li>
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">3</span>
-                    <span><strong>Clicca su una linea</strong> per rimuoverla o ridurla.</span>
+                    <span><strong>Clicca su una linea</strong> per rimuoverla.</span>
                 </li>
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">4</span>
-                    <span>I ponti non possono incrociarsi. Tutto deve essere unito.</span>
+                    <span>Nessun incrocio. Tutto connesso.</span>
                 </li>
             </ul>
             
-            <button onclick="toggleTutorial()" class="w-full py-3 bg-stone-800 hover:bg-stone-700 text-white rounded-lg font-bold transition border border-stone-700">
+            <button id="btn-close-modal" class="w-full py-3 bg-stone-800 hover:bg-stone-700 text-white rounded-lg font-bold transition border border-stone-700">
                 Ho capito
             </button>
         </div>
@@ -111,17 +105,17 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- CONFIGURAZIONE ---
+        // CONFIGURAZIONE
         const CONFIG = {
             GRID_SIZE: 7,
             CELL_SIZE: 55,
             PADDING: 40,
-            TARGET_ISLAND_COUNT_MIN: 10, // Difficoltà standard minima
-            TARGET_ISLAND_COUNT_MAX: 15  // Difficoltà standard massima
+            TARGET_ISLAND_COUNT_MIN: 10,
+            TARGET_ISLAND_COUNT_MAX: 15
         };
 
 
-        // --- UTILITIES GEOMETRICHE ---
+        // UTILS
         const intersects = (p1, p2, p3, p4) => {
             if ((p1.x === p3.x && p1.y === p3.y) || (p1.x === p4.x && p1.y === p4.y) ||
                 (p2.x === p3.x && p2.y === p3.y) || (p2.x === p4.x && p4.y === p4.y)) return false;
@@ -129,7 +123,7 @@
 
             const vertical1 = p1.x === p2.x;
             const vertical2 = p3.x === p4.x;
-            if (vertical1 === vertical2) return false; // Parallele (semplificato)
+            if (vertical1 === vertical2) return false;
 
 
             if (!vertical1) {
@@ -148,7 +142,7 @@
         });
 
 
-        // --- MOTORE DI GIOCO ---
+        // GAME CLASS
         class NexusGame {
             constructor() {
                 this.svg = document.getElementById('game-canvas');
@@ -162,7 +156,7 @@
                 
                 this.setupCanvas();
                 this.attachEvents();
-                this.newGame();
+                // Il gioco inizia, ma aspettiamo window.onload per generare il livello
             }
 
 
@@ -179,17 +173,17 @@
             generateLevel() {
                 let isValidGeneration = false;
                 let finalIslands = [];
-                let existingBridges = []; // Soluzione interna
+                let existingBridges = [];
 
 
-                // Loop finché non otteniamo una mappa "Standard" (né troppo vuota né troppo piena)
-                while (!isValidGeneration) {
+                let safeGuard = 0;
+                while (!isValidGeneration && safeGuard < 50) {
+                    safeGuard++;
                     let islands = [];
                     existingBridges = [];
                     const positions = [];
 
 
-                    // 1. Crea Griglia
                     for(let y=0; y<CONFIG.GRID_SIZE; y++) {
                         for(let x=0; x<CONFIG.GRID_SIZE; x++) {
                             if (Math.random() > 0.50) positions.push({x, y, id: `${x}-${y}`});
@@ -200,13 +194,11 @@
                     if (positions.length < CONFIG.TARGET_ISLAND_COUNT_MIN) continue;
 
 
-                    // 2. Crea Albero di Connessione (Spanning Tree)
                     const connected = [positions[Math.floor(Math.random() * positions.length)]];
                     const unconnect = positions.filter(p => p !== connected[0]);
 
 
                     const isPathClear = (p1, p2) => {
-                        // Ostacoli Isole
                         for (let other of positions) {
                             if (other === p1 || other === p2) continue;
                             if (p1.x === p2.x && other.x === p1.x) { 
@@ -216,10 +208,8 @@
                                 if (other.x > Math.min(p1.x, p2.x) && other.x < Math.max(p1.x, p2.x)) return false;
                             }
                         }
-                        // Incroci Ponti Esistenti
                         for (let b of existingBridges) {
                             if (intersects(p1, p2, b.p1, b.p2)) return false;
-                            // Sovrapposizione colineare
                             if ((p1.x === p2.x && b.p1.x === b.p2.x && p1.x === b.p1.x) ||
                                 (p1.y === p2.y && b.p1.y === b.p2.y && p1.y === b.p1.y)) {
                                 const min1 = p1.x === p2.x ? Math.min(p1.y, p2.y) : Math.min(p1.x, p2.x);
@@ -253,7 +243,6 @@
                     }
 
 
-                    // Aggiungi cicli extra
                     for (let i=0; i < connected.length; i++) {
                         if (Math.random() > 0.8) {
                             const p1 = connected[i];
@@ -265,7 +254,6 @@
                     }
 
 
-                    // Filtra e calcola requisiti
                     finalIslands = positions.map(pos => {
                         let req = 0;
                         existingBridges.forEach(b => { if (b.p1 === pos || b.p2 === pos) req += b.count; });
@@ -273,11 +261,19 @@
                     }).filter(isl => isl.req > 0 && isl.req <= 8);
 
 
-                    // Check Validità Standardizzata
                     if (finalIslands.length >= CONFIG.TARGET_ISLAND_COUNT_MIN && 
                         finalIslands.length <= CONFIG.TARGET_ISLAND_COUNT_MAX) {
                         isValidGeneration = true;
                     }
+                }
+                
+                // Fallback if safeGuard hit
+                if (!isValidGeneration && finalIslands.length === 0) {
+                   // Create a super simple box level
+                   finalIslands = [
+                       {x:2, y:2, req:2, id:'2-2'}, {x:4, y:2, req:2, id:'4-2'},
+                       {x:2, y:4, req:2, id:'2-4'}, {x:4, y:4, req:2, id:'4-4'}
+                   ];
                 }
                 
                 return finalIslands;
@@ -290,19 +286,14 @@
                 this.dragState = { active: false, startId: null, currentPos: null, targetId: null, status: 'neutral' };
                 this.winScreen.style.opacity = '0';
                 this.winScreen.style.pointerEvents = 'none';
+                this.updateStatus("Connetti il sistema");
                 this.render();
             }
 
 
-            // --- INPUT & EVENTI ---
             attachEvents() {
-                // Drag start dalle isole (gestito nel render per ogni isola)
-                
-                // Drag move globale
                 window.addEventListener('pointermove', (e) => this.handleMove(e));
                 window.addEventListener('pointerup', (e) => this.handleUp(e));
-                
-                // Touch prevent scroll
                 document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
             }
 
@@ -318,7 +309,7 @@
 
             handleDown(e, islandId) {
                 e.stopPropagation();
-                e.preventDefault(); // Importante per touch
+                e.preventDefault();
                 const pos = this.getPointerPos(e);
                 this.dragState = {
                     active: true,
@@ -336,7 +327,6 @@
                 if (!this.dragState.active) return;
                 const pos = this.getPointerPos(e);
                 
-                // Logica Hover Target
                 let target = null;
                 let status = 'neutral';
                 let msg = "";
@@ -358,7 +348,6 @@
 
 
                 if (!target) {
-                    // Snap Guide Logic
                     const startIsl = this.level.find(i => i.id === this.dragState.startId);
                     const s = getCoords(startIsl.x, startIsl.y);
                     const dx = Math.abs(pos.x - s.x);
@@ -380,13 +369,9 @@
 
             handleUp(e) {
                 if (!this.dragState.active) return;
-
-
                 if (this.dragState.status === 'valid' && this.dragState.targetId) {
                     this.modifyBridge(this.dragState.startId, this.dragState.targetId);
                 }
-
-
                 this.dragState = { active: false, startId: null, currentPos: null, targetId: null, status: 'neutral' };
                 this.checkWin();
                 this.updateStatus("Connetti il sistema");
@@ -397,15 +382,11 @@
             handleBridgeClick(e, bridgeIndex) {
                 e.stopPropagation();
                 const bridge = this.bridges[bridgeIndex];
-                
-                // Opzione: Rimuovi completamente (più veloce) o Cicla in giù (2->1->0)
-                // L'utente ha chiesto "cliccare per cancellare", quindi riduciamo
                 if (bridge.count === 2) {
                     bridge.count = 1;
                 } else {
                     this.bridges.splice(bridgeIndex, 1);
                 }
-                
                 this.checkWin();
                 this.render();
             }
@@ -426,12 +407,9 @@
             validateConnection(id1, id2) {
                 const isl1 = this.level.find(i => i.id === id1);
                 const isl2 = this.level.find(i => i.id === id2);
-                
-                // Ortogonalità
                 if (isl1.x !== isl2.x && isl1.y !== isl2.y) return { valid: false, reason: "Solo linee rette" };
 
 
-                // Ostacoli
                 const minX = Math.min(isl1.x, isl2.x); const maxX = Math.max(isl1.x, isl2.x);
                 const minY = Math.min(isl1.y, isl2.y); const maxY = Math.max(isl1.y, isl2.y);
                 const blocked = this.level.some(i => {
@@ -442,8 +420,32 @@
                 if (blocked) return { valid: false, reason: "Isola nel mezzo" };
 
 
-                // Incroci
                 const hasCrossing = this.bridges.some(b => {
                     const b1 = this.level.find(i => i.id === b.from);
                     const b2 = this.level.find(i => i.id === b.to);
-                    if ((b.from === id1 && b.to
+                    if ((b.from === id1 && b.to === id2) || (b.from === id2 && b.to === id1)) return false; 
+                    return intersects(isl1, isl2, b1, b2);
+                });
+                if (hasCrossing) return { valid: false, reason: "Incrocio non permesso" };
+
+
+                return { valid: true, reason: "Connetti" };
+            }
+
+
+            getIslandCurrent(id) {
+                let count = 0;
+                this.bridges.forEach(b => {
+                    if (b.from === id || b.to === id) count += b.count;
+                });
+                return count;
+            }
+
+
+            checkWin() {
+                const allSatisfied = this.level.every(isl => this.getIslandCurrent(isl.id) === isl.req);
+                if (!allSatisfied) return;
+                
+                const adj = {};
+                this.level.forEach(i => adj[i.id] = []);
+                this.bridges.forEach(b => { adj[b.from].push(b.to); adj[b.to].push(b.from
