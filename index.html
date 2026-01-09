@@ -3,450 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS - Connect the System</title>
-    
-    <!-- Tailwind CSS -->
+    <title>NEXUS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
+    <!-- Icone leggere -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
 
     <style>
+        /* Disabilita selezioni per evitare fastidi durante il gioco touch */
+        body { 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: none; 
+            background-color: #0c0a09; 
+        }
+        
+        /* Animazione pulsante */
         @keyframes pulse-glow {
             0%, 100% { filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.5)); }
             50% { filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.8)); }
         }
         .animate-glow { animation: pulse-glow 2s infinite; }
         
-        body { user-select: none; -webkit-user-select: none; touch-action: none; background-color: #0c0a09; }
-        ::-webkit-scrollbar { display: none; }
+        /* Nascondi elementi utilità */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="text-stone-200 font-sans h-screen w-screen overflow-hidden flex flex-col items-center justify-center">
 
 
-    <!-- HUD -->
+    <!-- TITOLO -->
     <div class="absolute top-8 text-center z-10 pointer-events-none">
         <h1 class="text-4xl font-light tracking-[0.3em] text-cyan-500 drop-shadow-lg">NEXUS</h1>
-        <p id="status-text" class="mt-2 text-xs font-bold uppercase tracking-widest text-stone-500 transition-colors duration-300">
-            Caricamento sistema...
+        <p id="status-text" class="mt-2 text-xs font-bold uppercase tracking-widest text-stone-500">
+            Connetti il sistema
         </p>
     </div>
 
 
-    <!-- MAIN GAME AREA -->
+    <!-- AREA DI GIOCO -->
     <div class="relative group touch-none">
-        <div id="game-container" class="relative bg-stone-900 rounded-2xl border border-stone-800 shadow-2xl transition-all duration-300">
+        <div id="game-container" class="relative bg-stone-900 rounded-2xl border border-stone-800 shadow-2xl">
+            <!-- SVG del gioco -->
             <svg id="game-canvas" class="block cursor-crosshair" style="touch-action: none;"></svg>
         </div>
 
 
-        <!-- WIN OVERLAY -->
-        <div id="win-screen" class="absolute inset-0 bg-stone-950/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-500">
+        <!-- SCHERMATA VITTORIA (Nascosta all'inizio) -->
+        <div id="win-screen" class="hidden absolute inset-0 bg-stone-950/90 backdrop-blur-sm rounded-2xl flex-col items-center justify-center z-50">
             <div class="bg-cyan-500/10 p-6 rounded-full mb-4 ring-1 ring-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
                 <i data-lucide="check" class="w-12 h-12 text-cyan-400"></i>
             </div>
             <h2 class="text-3xl font-bold text-white mb-1 tracking-wider">CONNESSO</h2>
-            <p class="text-stone-400 text-sm mb-8">Sistema sincronizzato.</p>
-            <button id="btn-next-level" class="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold shadow-lg shadow-cyan-900/40 transition-all active:scale-95 flex items-center gap-2 pointer-events-auto">
-                Prossima Configurazione <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            <button id="btn-next" class="mt-8 px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full font-bold shadow-lg shadow-cyan-900/40 transition-transform active:scale-95 flex items-center gap-2">
+                Prossimo Livello <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
         </div>
     </div>
 
 
-    <!-- CONTROLS -->
+    <!-- PULSANTI CONTROLLO -->
     <div class="absolute bottom-8 flex gap-4 z-10">
-        <button id="btn-reset" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Reset Livello">
-            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        <button id="btn-reset" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 transition-all active:scale-95">
+            <i data-lucide="refresh-cw" class="w-6 h-6"></i>
         </button>
-        <button id="btn-help" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Come Giocare">
-            <i data-lucide="info" class="w-5 h-5"></i>
+        <button id="btn-help" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 transition-all active:scale-95">
+            <i data-lucide="info" class="w-6 h-6"></i>
         </button>
     </div>
 
 
-    <!-- TUTORIAL MODAL (Nascosto di default) -->
-    <div id="tutorial-modal" style="display: none;" class="fixed inset-0 bg-black/80 z-[60] items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <!-- MODALE AIUTO (Nascosto) -->
+    <div id="modal-help" class="hidden fixed inset-0 bg-black/80 z-[60] items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-stone-900 border border-stone-800 p-8 rounded-2xl max-w-sm w-full shadow-2xl relative">
-            <button id="btn-close-modal-x" class="absolute top-4 right-4 text-stone-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            
-            <div class="flex items-center gap-2 mb-6 text-cyan-400 font-bold text-lg">
-                <i data-lucide="mouse-pointer-2" class="w-5 h-5"></i> Guida Rapida
-            </div>
-            
-            <ul class="space-y-4 text-stone-300 text-sm leading-relaxed mb-8">
-                <li class="flex gap-3 items-start">
-                    <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">1</span>
-                    <span><strong>Trascina</strong> da un'isola all'altra per collegarle.</span>
-                </li>
-                <li class="flex gap-3 items-start">
-                    <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">2</span>
-                    <span>Il numero indica quanti ponti servono.</span>
-                </li>
-                <li class="flex gap-3 items-start">
-                    <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">3</span>
-                    <span><strong>Clicca su una linea</strong> per rimuoverla.</span>
-                </li>
-                <li class="flex gap-3 items-start">
-                    <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">4</span>
-                    <span>Collega tutto senza incroci.</span>
-                </li>
+            <button id="btn-close-help" class="absolute top-4 right-4 text-stone-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h3 class="text-xl text-cyan-400 font-bold mb-4">Come Giocare</h3>
+            <ul class="space-y-3 text-stone-300 text-sm mb-6">
+                <li>• <strong>Trascina</strong> tra due isole per creare un ponte.</li>
+                <li>• Il numero indica i ponti necessari.</li>
+                <li>• <strong>Clicca su una linea</strong> per cancellarla.</li>
+                <li>• Nessun incrocio permesso.</li>
             </ul>
-            
-            <button id="btn-close-modal" class="w-full py-3 bg-stone-800 hover:bg-stone-700 text-white rounded-lg font-bold transition border border-stone-700">
-                Chiudi
-            </button>
+            <button id="btn-close-modal-main" class="w-full py-3 bg-stone-800 hover:bg-stone-700 text-white rounded-lg font-bold border border-stone-700">Chiudi</button>
         </div>
     </div>
 
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- LOGICA DEL GIOCO -->
     <script>
-        // CONFIGURAZIONE
+        // --- CONFIGURAZIONE ---
         const CONFIG = {
-            GRID_SIZE: 7,
-            CELL_SIZE: 55,
-            PADDING: 40,
-            TARGET_ISLAND_COUNT_MIN: 10,
-            TARGET_ISLAND_COUNT_MAX: 15
+            GRID: 7,
+            CELL: 50, // Dimensione cella
+            PAD: 30   // Margine
         };
 
 
-        // UTILS
-        const intersects = (p1, p2, p3, p4) => {
-            if ((p1.x === p3.x && p1.y === p3.y) || (p1.x === p4.x && p1.y === p4.y) ||
-                (p2.x === p3.x && p2.y === p3.y) || (p2.x === p4.x && p4.y === p4.y)) return false;
-
-
-            const vertical1 = p1.x === p2.x;
-            const vertical2 = p3.x === p4.x;
-            if (vertical1 === vertical2) return false;
-
-
-            if (!vertical1) {
-                return (p3.x > Math.min(p1.x, p2.x) && p3.x < Math.max(p1.x, p2.x) &&
-                        p1.y > Math.min(p3.y, p4.y) && p1.y < Math.max(p3.y, p4.y));
-            } else {
-                return (p1.y > Math.min(p3.y, p4.y) && p1.y < Math.max(p3.y, p4.y) &&
-                        p3.x > Math.min(p1.x, p2.x) && p3.x < Math.max(p1.x, p2.x));
-            }
-        };
-
-
-        const getCoords = (gx, gy) => ({ 
-            x: gx * CONFIG.CELL_SIZE + CONFIG.PADDING, 
-            y: gy * CONFIG.CELL_SIZE + CONFIG.PADDING 
-        });
-
-
-        // GAME CLASS
+        // --- CLASSE GIOCO ---
         class NexusGame {
             constructor() {
                 this.svg = document.getElementById('game-canvas');
                 this.container = document.getElementById('game-container');
-                this.statusText = document.getElementById('status-text');
+                this.status = document.getElementById('status-text');
                 this.winScreen = document.getElementById('win-screen');
                 
+                // Stato interno
                 this.level = [];
                 this.bridges = [];
-                this.dragState = { active: false, startId: null, currentPos: null, targetId: null, status: 'neutral' };
-                
-                this.setupCanvas();
-                this.attachEvents();
-            }
+                this.drag = { active: false, start: null, curr: null, target: null, valid: false };
 
 
-            setupCanvas() {
-                const size = CONFIG.GRID_SIZE * CONFIG.CELL_SIZE + CONFIG.PADDING * 2;
+                // Inizializza dimensioni SVG
+                const size = CONFIG.GRID * CONFIG.CELL + CONFIG.PAD * 2;
                 this.svg.setAttribute('width', size);
                 this.svg.setAttribute('height', size);
-                this.svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-                this.container.style.width = `${size}px`;
-                this.container.style.height = `${size}px`;
+                this.container.style.width = size + 'px';
+                this.container.style.height = size + 'px';
+
+
+                // Event Listeners Globali
+                this.svg.addEventListener('pointerdown', (e) => this.onDown(e));
+                window.addEventListener('pointermove', (e) => this.onMove(e));
+                window.addEventListener('pointerup', (e) => this.onUp(e));
+                // Previeni scroll su mobile
+                document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
             }
 
 
-            generateLevel() {
-                let isValidGeneration = false;
-                let finalIslands = [];
-                let existingBridges = [];
-
-
-                let safeGuard = 0;
-                while (!isValidGeneration && safeGuard < 50) {
-                    safeGuard++;
-                    let islands = [];
-                    existingBridges = [];
-                    const positions = [];
-
-
-                    for(let y=0; y<CONFIG.GRID_SIZE; y++) {
-                        for(let x=0; x<CONFIG.GRID_SIZE; x++) {
-                            if (Math.random() > 0.50) positions.push({x, y, id: `${x}-${y}`});
+            // --- GENERAZIONE LIVELLO ---
+            generate() {
+                let attempts = 0;
+                while (attempts < 50) {
+                    attempts++;
+                    const nodes = [];
+                    // 1. Crea nodi casuali
+                    for(let y=0; y<CONFIG.GRID; y++) {
+                        for(let x=0; x<CONFIG.GRID; x++) {
+                            if(Math.random() > 0.55) nodes.push({x, y, id: `${x}-${y}`, req: 0});
                         }
                     }
+                    if(nodes.length < 8) continue;
 
 
-                    if (positions.length < CONFIG.TARGET_ISLAND_COUNT_MIN) continue;
+                    // 2. Connetti nodi (Spanning Tree + Cicli)
+                    const bridges = [];
+                    const connected = [nodes[0]];
+                    const unconnected = nodes.slice(1);
 
 
-                    const connected = [positions[Math.floor(Math.random() * positions.length)]];
-                    const unconnect = positions.filter(p => p !== connected[0]);
-
-
-                    const isPathClear = (p1, p2) => {
-                        for (let other of positions) {
-                            if (other === p1 || other === p2) continue;
-                            if (p1.x === p2.x && other.x === p1.x) { 
-                                if (other.y > Math.min(p1.y, p2.y) && other.y < Math.max(p1.y, p2.y)) return false;
-                            }
-                            if (p1.y === p2.y && other.y === p1.y) { 
-                                if (other.x > Math.min(p1.x, p2.x) && other.x < Math.max(p1.x, p2.x)) return false;
-                            }
+                    const canConnect = (n1, n2) => {
+                        // Deve essere ortogonale
+                        if(n1.x !== n2.x && n1.y !== n2.y) return false;
+                        // Niente ostacoli in mezzo
+                        const minX = Math.min(n1.x, n2.x), maxX = Math.max(n1.x, n2.x);
+                        const minY = Math.min(n1.y, n2.y), maxY = Math.max(n1.y, n2.y);
+                        for(let n of nodes) {
+                            if(n===n1 || n===n2) continue;
+                            if(n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY && (n.x===n1.x || n.y===n1.y)) return false;
                         }
-                        for (let b of existingBridges) {
-                            if (intersects(p1, p2, b.p1, b.p2)) return false;
-                            if ((p1.x === p2.x && b.p1.x === b.p2.x && p1.x === b.p1.x) ||
-                                (p1.y === p2.y && b.p1.y === b.p2.y && p1.y === b.p1.y)) {
-                                const min1 = p1.x === p2.x ? Math.min(p1.y, p2.y) : Math.min(p1.x, p2.x);
-                                const max1 = p1.x === p2.x ? Math.max(p1.y, p2.y) : Math.max(p1.x, p2.x);
-                                const min2 = b.p1.x === b.p2.x ? Math.min(b.p1.y, b.p2.y) : Math.min(b.p1.x, b.p2.x);
-                                const max2 = b.p1.x === b.p2.x ? Math.max(b.p1.y, b.p2.y) : Math.max(b.p1.x, b.p2.x);
-                                if (min1 < max2 && max1 > min2) return false;
+                        // Niente incroci con ponti esistenti
+                        for(let b of bridges) {
+                            if(this.intersects(n1, n2, b.p1, b.p2)) return false;
+                            // Check sovrapposizione colineare
+                            if ((n1.x===n2.x && b.p1.x===b.p2.x && n1.x===b.p1.x) || (n1.y===n2.y && b.p1.y===b.p2.y && n1.y===b.p1.y)) {
+                                const s1 = n1.x===n2.x ? [minY, maxY] : [minX, maxX];
+                                const s2 = b.p1.x===b.p2.x ? [Math.min(b.p1.y,b.p2.y), Math.max(b.p1.y,b.p2.y)] : [Math.min(b.p1.x,b.p2.x), Math.max(b.p1.x,b.p2.x)];
+                                if(s1[0] < s2[1] && s1[1] > s2[0]) return false; 
                             }
                         }
                         return true;
                     };
 
 
-                    let attempts = 0;
-                    while(unconnect.length > 0 && attempts < 2000) {
-                        attempts++;
+                    let stuck = false;
+                    while(unconnected.length > 0) {
                         const source = connected[Math.floor(Math.random() * connected.length)];
-                        const candidates = unconnect.filter(target => {
-                            if (source.x !== target.x && source.y !== target.y) return false;
-                            return isPathClear(source, target);
-                        });
-
-
-                        if (candidates.length > 0) {
-                            const target = candidates[Math.floor(Math.random() * candidates.length)];
-                            const count = Math.random() > 0.6 ? 2 : 1;
-                            existingBridges.push({ p1: source, p2: target, count });
-                            connected.push(target);
-                            unconnect.splice(unconnect.indexOf(target), 1);
+                        const validTargets = unconnected.filter(t => canConnect(source, t));
+                        
+                        if(validTargets.length === 0) {
+                            // Se siamo bloccati e non possiamo connettere tutto, riprova generazione
+                            if(Math.random() > 0.9) { stuck = true; break; } 
+                            continue; 
                         }
+                        
+                        const target = validTargets[Math.floor(Math.random() * validTargets.length)];
+                        const count = Math.random() > 0.6 ? 2 : 1;
+                        bridges.push({p1: source, p2: target, count});
+                        connected.push(target);
+                        unconnected.splice(unconnected.indexOf(target), 1);
                     }
+                    if(stuck) continue;
 
 
-                    for (let i=0; i < connected.length; i++) {
-                        if (Math.random() > 0.8) {
-                            const p1 = connected[i];
-                            const p2 = connected[Math.floor(Math.random() * connected.length)];
-                            if (p1 !== p2 && (p1.x === p2.x || p1.y === p2.y)) {
-                                if (isPathClear(p1, p2)) existingBridges.push({ p1, p2, count: 1 });
-                            }
-                        }
-                    }
+                    // Calcola requisiti
+                    nodes.forEach(n => {
+                        n.req = 0;
+                        bridges.forEach(b => { if(b.p1===n || b.p2===n) n.req += b.count; });
+                    });
 
 
-                    finalIslands = positions.map(pos => {
-                        let req = 0;
-                        existingBridges.forEach(b => { if (b.p1 === pos || b.p2 === pos) req += b.count; });
-                        return { ...pos, req };
-                    }).filter(isl => isl.req > 0 && isl.req <= 8);
-
-
-                    if (finalIslands.length >= CONFIG.TARGET_ISLAND_COUNT_MIN && 
-                        finalIslands.length <= CONFIG.TARGET_ISLAND_COUNT_MAX) {
-                        isValidGeneration = true;
-                    }
-                }
-                
-                // Fallback di sicurezza
-                if (!isValidGeneration && finalIslands.length === 0) {
-                   finalIslands = [{x:2, y:2, req:2, id:'2-2'}, {x:4, y:2, req:2, id:'4-2'}, {x:2, y:4, req:2, id:'2-4'}, {x:4, y:4, req:2, id:'4-4'}];
-                }
-                
-                return finalIslands;
-            }
-
-
-            newGame() {
-                this.level = this.generateLevel();
-                this.bridges = [];
-                this.dragState = { active: false, startId: null, currentPos: null, targetId: null, status: 'neutral' };
-                this.winScreen.style.opacity = '0';
-                this.winScreen.style.pointerEvents = 'none';
-                this.updateStatus("Connetti il sistema");
-                this.render();
-            }
-
-
-            attachEvents() {
-                window.addEventListener('pointermove', (e) => this.handleMove(e));
-                window.addEventListener('pointerup', (e) => this.handleUp(e));
-                document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-            }
-
-
-            getPointerPos(e) {
-                const rect = this.svg.getBoundingClientRect();
-                return {
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
-                };
-            }
-
-
-            handleDown(e, islandId) {
-                e.stopPropagation();
-                e.preventDefault();
-                const pos = this.getPointerPos(e);
-                this.dragState = {
-                    active: true,
-                    startId: islandId,
-                    currentPos: pos,
-                    targetId: null,
-                    status: 'neutral'
-                };
-                this.updateStatus("Trascina verso un'isola...");
-                this.render();
-            }
-
-
-            handleMove(e) {
-                if (!this.dragState.active) return;
-                const pos = this.getPointerPos(e);
-                
-                let target = null;
-                let status = 'neutral';
-                let msg = "";
-
-
-                for (let isl of this.level) {
-                    if (isl.id === this.dragState.startId) continue;
-                    const coords = getCoords(isl.x, isl.y);
-                    const dist = Math.sqrt(Math.pow(coords.x - pos.x, 2) + Math.pow(coords.y - pos.y, 2));
+                    // Filtra nodi isolati (non dovrebbero esserci ma sicurezza)
+                    this.level = nodes.filter(n => n.req > 0 && n.req <= 8);
                     
-                    if (dist < 30) {
-                        target = isl.id;
-                        const validation = this.validateConnection(this.dragState.startId, isl.id);
-                        status = validation.valid ? 'valid' : 'invalid';
-                        msg = validation.reason;
+                    if(this.level.length >= 8 && this.level.length <= 15) return; // Livello valido
+                }
+                
+                // Fallback estremo se la generazione fallisce
+                this.level = [{x:2,y:2,req:2,id:'a'},{x:4,y:2,req:2,id:'b'},{x:2,y:4,req:2,id:'c'},{x:4,y:4,req:2,id:'d'}];
+            }
+
+
+            // --- GESTIONE INPUT ---
+            getPos(e) {
+                const rect = this.svg.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            }
+
+
+            onDown(e) {
+                // Se clicchi su un ponte (logica semplificata: distanza punto-linea)
+                if(!e.target.closest('circle')) {
+                    const pos = this.getPos(e);
+                    // Cerca ponte vicino
+                    const bridgeIdx = this.bridges.findIndex(b => {
+                        const n1 = this.level.find(n => n.id === b.from);
+                        const n2 = this.level.find(n => n.id === b.to);
+                        const p1 = this.gridToPx(n1.x, n1.y);
+                        const p2 = this.gridToPx(n2.x, n2.y);
+                        // Distanza punto-segmento
+                        const A = pos.x - p1.x, B = pos.y - p1.y, C = p2.x - p1.x, D = p2.y - p1.y;
+                        const dot = A * C + B * D;
+                        const len_sq = C * C + D * D;
+                        let param = -1;
+                        if (len_sq !== 0) param = dot / len_sq;
+                        let xx, yy;
+                        if (param < 0) { xx = p1.x; yy = p1.y; }
+                        else if (param > 1) { xx = p2.x; yy = p2.y; }
+                        else { xx = p1.x + param * C; yy = p1.y + param * D; }
+                        const dx = pos.x - xx;
+                        const dy = pos.y - yy;
+                        return (dx * dx + dy * dy) < 250; // ~15px raggio
+                    });
+
+
+                    if(bridgeIdx !== -1) {
+                        const b = this.bridges[bridgeIdx];
+                        if(b.count === 2) b.count = 1; else this.bridges.splice(bridgeIdx, 1);
+                        this.render();
+                        this.checkWin();
+                        return;
+                    }
+                }
+
+
+                // Drag Inizio
+                const t = e.target.closest('g');
+                if(t && t.dataset.id) {
+                    const id = t.dataset.id;
+                    this.drag = { active: true, start: id, curr: this.getPos(e), target: null, valid: false };
+                    this.status.innerText = "Trascina verso un'isola...";
+                    this.render();
+                }
+            }
+
+
+            onMove(e) {
+                if(!this.drag.active) return;
+                const pos = this.getPos(e);
+                this.drag.curr = pos;
+
+
+                // Trova target hover
+                let targetId = null;
+                let valid = false;
+                let msg = "Cerca un'isola";
+
+
+                for(let n of this.level) {
+                    if(n.id === this.drag.start) continue;
+                    const p = this.gridToPx(n.x, n.y);
+                    if(Math.hypot(p.x - pos.x, p.y - pos.y) < 30) {
+                        targetId = n.id;
+                        const check = this.validate(this.drag.start, n.id);
+                        valid = check.ok;
+                        msg = check.msg;
                         break;
                     }
                 }
 
 
-                if (!target) {
-                    const startIsl = this.level.find(i => i.id === this.dragState.startId);
-                    const s = getCoords(startIsl.x, startIsl.y);
-                    const dx = Math.abs(pos.x - s.x);
-                    const dy = Math.abs(pos.y - s.y);
-                    if (dx > dy * 2) msg = "Orizzontale...";
-                    else if (dy > dx * 2) msg = "Verticale...";
-                    else msg = "Cerca un'isola in linea retta";
+                // Snap Guide
+                if(!targetId) {
+                   const startN = this.level.find(n => n.id === this.drag.start);
+                   const pS = this.gridToPx(startN.x, startN.y);
+                   const dx = Math.abs(pos.x - pS.x);
+                   const dy = Math.abs(pos.y - pS.y);
+                   if(dx > dy*2) msg = "Orizzontale...";
+                   else if(dy > dx*2) msg = "Verticale...";
                 }
 
 
-                this.dragState.currentPos = pos;
-                this.dragState.targetId = target;
-                this.dragState.status = status;
+                this.drag.target = targetId;
+                this.drag.valid = valid;
+                this.status.innerText = msg;
+                if(!valid && targetId) this.status.classList.add('text-red-500');
+                else this.status.classList.remove('text-red-500');
                 
-                this.updateStatus(msg);
                 this.render();
             }
 
 
-            handleUp(e) {
-                if (!this.dragState.active) return;
-                if (this.dragState.status === 'valid' && this.dragState.targetId) {
-                    this.modifyBridge(this.dragState.startId, this.dragState.targetId);
+            onUp(e) {
+                if(!this.drag.active) return;
+                if(this.drag.valid && this.drag.target) {
+                    this.addBridge(this.drag.start, this.drag.target);
                 }
-                this.dragState = { active: false, startId: null, currentPos: null, targetId: null, status: 'neutral' };
-                this.checkWin();
-                this.updateStatus("Connetti il sistema");
-                this.render();
-            }
-
-
-            handleBridgeClick(e, bridgeIndex) {
-                e.stopPropagation();
-                const bridge = this.bridges[bridgeIndex];
-                if (bridge.count === 2) {
-                    bridge.count = 1;
-                } else {
-                    this.bridges.splice(bridgeIndex, 1);
-                }
+                this.drag.active = false;
+                this.status.innerText = "Connetti il sistema";
+                this.status.classList.remove('text-red-500');
                 this.checkWin();
                 this.render();
             }
 
 
-            modifyBridge(id1, id2) {
+            // --- LOGICA GIOCO ---
+            addBridge(id1, id2) {
                 const [from, to] = [id1, id2].sort();
-                const idx = this.bridges.findIndex(b => b.from === from && b.to === to);
-                if (idx >= 0) {
-                    if (this.bridges[idx].count === 1) this.bridges[idx].count = 2;
-                    else this.bridges.splice(idx, 1);
+                const exist = this.bridges.find(b => b.from === from && b.to === to);
+                if(exist) {
+                    if(exist.count === 1) exist.count = 2; else this.bridges = this.bridges.filter(b => b!==exist);
                 } else {
-                    this.bridges.push({ from, to, count: 1 });
+                    this.bridges.push({from, to, count: 1});
                 }
             }
 
 
-            validateConnection(id1, id2) {
-                const isl1 = this.level.find(i => i.id === id1);
-                const isl2 = this.level.find(i => i.id === id2);
-                if (isl1.x !== isl2.x && isl1.y !== isl2.y) return { valid: false, reason: "Solo linee rette" };
+            validate(id1, id2) {
+                const n1 = this.level.find(n => n.id === id1);
+                const n2 = this.level.find(n => n.id === id2);
+                if(n1.x !== n2.x && n1.y !== n2.y) return {ok: false, msg: "Solo linee rette"};
+                
+                // Ostacoli e Incroci
+                const minX = Math.min(n1.x, n2.x), maxX = Math.max(n1.x, n2.x);
+                const minY = Math.min(n1.y, n2.y), maxY = Math.max(n1.y, n2.y);
+                
+                for(let n of this.level) {
+                    if(n===n1 || n===n2) continue;
+                    if(n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY && (n.x===n1.x || n.y===n1.y)) 
+                        return {ok: false, msg: "Isola nel mezzo"};
+                }
 
 
-                const minX = Math.min(isl1.x, isl2.x); const maxX = Math.max(isl1.x, isl2.x);
-                const minY = Math.min(isl1.y, isl2.y); const maxY = Math.max(isl1.y, isl2.y);
-                const blocked = this.level.some(i => {
-                    if (i.id === id1 || i.id === id2) return false;
-                    if (isl1.x === isl2.x) return i.x === isl1.x && i.y > minY && i.y < maxY;
-                    return i.y === isl1.y && i.x > minX && i.x < maxX;
-                });
-                if (blocked) return { valid: false, reason: "Isola nel mezzo" };
-
-
-                const hasCrossing = this.bridges.some(b => {
-                    const b1 = this.level.find(i => i.id === b.from);
-                    const b2 = this.level.find(i => i.id === b.to);
-                    if ((b.from === id1 && b.to === id2) || (b.from === id2 && b.to === id1)) return false; 
-                    return intersects(isl1, isl2, b1, b2);
-                });
-                if (hasCrossing) return { valid: false, reason: "Incrocio non permesso" };
-
-
-                return { valid: true, reason: "Connetti" };
+                for(let b of this.bridges) {
+                    const bn1 = this.level.find(n => n.id === b.from);
+                    const bn2 = this.level.find(n => n.id === b.to);
+                    if((b.from===id1 && b.to===id2) || (b.from===id2 && b.to===id1)) continue; // Stesso ponte
+                    if(this.intersects(n1, n2, bn1, bn2)) return {ok: false, msg: "Incrocio!"};
+                }
+                
+                return {ok: true, msg: "Connetti"};
             }
 
 
-            getIslandCurrent(id) {
-                let count = 0;
-                this.bridges.forEach(b => {
-                    if (b.from === id || b.to === id) count += b.count;
-                });
-                return count;
+            intersects(a, b, c, d) {
+                // Semplice check incrocio segmenti ortogonali
+                const vert1 = a.x === b.x;
+                const vert2 = c.x === d.x;
+                if(vert1 === vert2) return false; // Paralleli
+                
+                const x1 = Math.min(a.x, b.x), x2 = Math.max(a.x, b.x);
+                const y1 = Math.min(a.y, b.y), y2 = Math.max(a.y, b.y);
+                const x3 = Math.min(c.x, d.x), x4 = Math.max(c.x, d.x);
+                const y3 = Math.min(c.y, d.y), y4 = Math.max(c.y, d.y);
+
+
+                if(vert1) { // 1 è vert, 2 è orizz
+                    return x1 > x3 && x1 < x4 && y3 > y1 && y3 < y2;
+                } else {
+                    return x3 > x1 && x3 < x2 && y1 > y3 && y1 < y4;
+                }
             }
 
 
             checkWin() {
-                const allSatisfied = this.level.every(isl => this.getIslandCurrent(isl.id) === isl.req);
-                if (!allSatisfied) return;
-                
+                const sat = this.level.every(n => {
+                    let c = 0;
+                    this.bridges.forEach(b => { if(b.from===n.id || b.to===n.id) c += b.count; });
+                    return c === n.req;
+                });
+                if(!sat) return;
+
+
+                // BFS per connettività
                 const adj = {};
-                this.level.forEach(i => adj[i.id] = []);
+                this.level.forEach(n => adj[n.id] = []);
                 this.bridges.forEach(b => { adj[b.from].push(b.to); adj[b.to].push(b.from); });
-                
-                const visited = new Set();
                 const q = [this.level[0].id];
-                visited.add(this.level[0].id);
+                const visited = new Set([this.level[0].id]);
                 while(q.length) {
                     const curr = q.shift();
-                    fo
+                    for(let nei of adj[curr]) {
+                        if(!visited.has(nei)) { visited.add(nei); q.push(nei); }
+                    }
+                }
+                
+                if(visited.size === this.level.length) {
+                    this.winScreen.classList.remove('hidden');
+                    this.winScreen.classList.add('flex');
+                }
+            }
+
+
+            newGame() {
+                this.bridges = [];
+                this.generate();
+                this.winScreen.classList.add('hidden');
+                this.winScreen.classList.remove('flex');
+                this.status.innerText = "Connetti il sistema";
+                this.render();
+            }
+
+
+            // --- RENDERING ---
+            gridToPx(x, y) {
+                return { x: x * CONFIG.CELL + CONFIG.PAD, y: y * CONFIG.CELL + CONFIG.PAD };
+            }
+
+
+            render() {
+                let html = '';
+                
+                // Griglia (Puntini)
+                for(let y=0; y<CONFIG.GRID; y++) {
+                    for(let x=0; x<CONFIG.GRID; x++) {
+                        const p = this.gridToPx(x, y);
+                        html += `<circle cx="${p.x}" cy="${p.y}" r="1" fill="#292524" />`;
+                    }
+                }
+
+
+                // Ponti
+                this.bridges.forEach(b => {
+                    const n1 = this.level.find(n => n.id === b.from);
+                    const n2 = this.level.find(n => n.id === b.to);
+                    const p1 = this.gridToPx(n1.x, n1.y);
+                    const p2 = this.gridToPx(n2.x, n2.y);
+                    const offset = 3;
+                    
+                    if(b.count === 1) {
+                         html += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#06b6d4" stroke-width="4" stroke-opacity="0.5" stroke-linecap="round" />`;
+                    } else {
+                        const isVert = n1.x === n2.x;
+                        if(isVert) {
+                             html += `<line x1="${p1.x-offset}" y1="${p1.y}" x2="${p2.x-offset}" y2="${p2.y}" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.5" stroke-linecap="round" />`;
+                             html += `<line x1="${p1.x+offset}" y1
