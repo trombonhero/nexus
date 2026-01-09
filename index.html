@@ -58,18 +58,17 @@
 
     <!-- CONTROLS -->
     <div class="absolute bottom-8 flex gap-4 z-10">
-        <button id="btn-reset" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Nuova Partita">
+        <button id="btn-reset" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Reset Livello">
             <i data-lucide="refresh-cw" class="w-5 h-5"></i>
         </button>
-        <button id="btn-help" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Aiuto">
+        <button id="btn-help" class="p-4 bg-stone-900 border border-stone-800 rounded-full text-stone-500 hover:text-cyan-400 hover:border-cyan-900 hover:bg-stone-800 transition-all shadow-lg active:scale-95" title="Come Giocare">
             <i data-lucide="info" class="w-5 h-5"></i>
         </button>
     </div>
 
 
-    <!-- TUTORIAL MODAL -->
-    <!-- Nota: rimosso 'style' inline e usato classi per gestire visibilità -->
-    <div id="tutorial-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-100">
+    <!-- TUTORIAL MODAL (Nascosto di default) -->
+    <div id="tutorial-modal" style="display: none;" class="fixed inset-0 bg-black/80 z-[60] items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-0">
         <div class="bg-stone-900 border border-stone-800 p-8 rounded-2xl max-w-sm w-full shadow-2xl relative">
             <button id="btn-close-modal-x" class="absolute top-4 right-4 text-stone-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             
@@ -80,7 +79,7 @@
             <ul class="space-y-4 text-stone-300 text-sm leading-relaxed mb-8">
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">1</span>
-                    <span><strong>Trascina</strong> da un'isola all'altra per creare un ponte.</span>
+                    <span><strong>Trascina</strong> da un'isola all'altra per collegarle.</span>
                 </li>
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">2</span>
@@ -92,12 +91,12 @@
                 </li>
                 <li class="flex gap-3 items-start">
                     <span class="bg-stone-800 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold text-cyan-500 border border-stone-700">4</span>
-                    <span>Nessun incrocio. Tutto connesso.</span>
+                    <span>Collega tutto senza incroci.</span>
                 </li>
             </ul>
             
             <button id="btn-close-modal" class="w-full py-3 bg-stone-800 hover:bg-stone-700 text-white rounded-lg font-bold transition border border-stone-700">
-                Ho capito
+                Chiudi
             </button>
         </div>
     </div>
@@ -156,7 +155,6 @@
                 
                 this.setupCanvas();
                 this.attachEvents();
-                // Il gioco inizia, ma aspettiamo window.onload per generare il livello
             }
 
 
@@ -267,13 +265,9 @@
                     }
                 }
                 
-                // Fallback if safeGuard hit
+                // Fallback di sicurezza
                 if (!isValidGeneration && finalIslands.length === 0) {
-                   // Create a super simple box level
-                   finalIslands = [
-                       {x:2, y:2, req:2, id:'2-2'}, {x:4, y:2, req:2, id:'4-2'},
-                       {x:2, y:4, req:2, id:'2-4'}, {x:4, y:4, req:2, id:'4-4'}
-                   ];
+                   finalIslands = [{x:2, y:2, req:2, id:'2-2'}, {x:4, y:2, req:2, id:'4-2'}, {x:2, y:4, req:2, id:'2-4'}, {x:4, y:4, req:2, id:'4-4'}];
                 }
                 
                 return finalIslands;
@@ -448,4 +442,11 @@
                 
                 const adj = {};
                 this.level.forEach(i => adj[i.id] = []);
-                this.bridges.forEach(b => { adj[b.from].push(b.to); adj[b.to].push(b.from
+                this.bridges.forEach(b => { adj[b.from].push(b.to); adj[b.to].push(b.from); });
+                
+                const visited = new Set();
+                const q = [this.level[0].id];
+                visited.add(this.level[0].id);
+                while(q.length) {
+                    const curr = q.shift();
+                    fo
