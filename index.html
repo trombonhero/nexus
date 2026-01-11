@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS - Experience</title>
+    <title>NEXUS - Fixed</title>
     <style>
         /* BASE & THEME */
         :root { 
@@ -19,7 +19,7 @@
         body {
             margin: 0; padding: 0;
             background-color: var(--bg); color: var(--text);
-            font-family: 'Courier New', Courier, monospace; /* Tech feel */
+            font-family: 'Courier New', Courier, monospace;
             height: 100vh; width: 100vw;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             overflow: hidden;
@@ -27,7 +27,6 @@
             user-select: none;
         }
 
-        /* HEADER */
         h1 {
             font-size: 2.5rem; letter-spacing: 0.3em; margin: 0;
             color: var(--accent); text-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
@@ -42,7 +41,6 @@
         .status.ok .status-dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
         .status.err .status-dot { background: var(--error); box-shadow: 0 0 8px var(--error); }
 
-        /* BOARD */
         .game-board {
             position: relative;
             background: var(--panel);
@@ -54,7 +52,6 @@
         }
         svg { width: 100%; height: 100%; display: block; cursor: crosshair; }
 
-        /* UI CONTROLS */
         .controls { display: flex; gap: 1.5rem; margin-top: 2rem; }
         .btn-icon {
             background: transparent; border: 1px solid #44403c; color: var(--text-dim);
@@ -65,10 +62,9 @@
         .btn-icon:active { transform: scale(0.92); background: #292524; color: var(--accent); border-color: var(--accent); }
         .btn-icon svg { width: 1.8rem; height: 1.8rem; pointer-events: none; }
 
-        /* OVERLAYS */
         .overlay {
             position: absolute; inset: 0;
-            background: rgba(12, 10, 9, 0.92);
+            background: rgba(12, 10, 9, 0.95);
             backdrop-filter: blur(4px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
@@ -86,10 +82,8 @@
         }
         .btn-main:active { transform: scale(0.95); }
 
-        /* ANIMATIONS */
         @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 10px var(--success); } 100% { opacity: 0.8; } }
         .node-complete { animation: pulse 3s infinite ease-in-out; }
-
     </style>
 </head>
 <body>
@@ -102,29 +96,29 @@
         
         <!-- WIN SCREEN -->
         <div id="win-overlay" class="overlay">
-            <svg style="width: 80px; height: 80px; color: var(--success); margin-bottom:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            <h2 style="margin:0; font-size: 1.8rem; letter-spacing: 0.1em; color:white;">SINCRONIZZATO</h2>
-            <button id="btn-next" class="btn-main">Prossima Configurazione</button>
+            <h2 style="margin:0; font-size: 1.8rem; letter-spacing: 0.1em; color:white; margin-bottom: 1rem;">SINCRONIZZATO</h2>
+            <div style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;">&#10003;</div>
+            <button id="btn-next" class="btn-main">Prossimo Livello</button>
         </div>
 
         <!-- HELP SCREEN -->
         <div id="help-overlay" class="overlay">
             <h3 style="color:var(--accent); letter-spacing: 0.2em; margin-bottom: 1.5rem;">PROTOCOLLO</h3>
             <ul style="text-align: left; font-size: 0.85rem; color: #d6d3d1; line-height: 2; list-style: none; padding:0; margin:0;">
-                <li>⦿ Trascina tra i nodi per connetterli</li>
-                <li>⦿ Il numero indica i ponti richiesti</li>
-                <li>⦿ Tocca una linea per rimuoverla</li>
-                <li>⦿ Nessun incrocio permesso</li>
+                <li>⦿ Unisci i nodi (Orizz/Vert)</li>
+                <li>⦿ <strong>Ripeti il gesto</strong> per ponte doppio</li>
+                <li>⦿ Numero = ponti totali</li>
+                <li>⦿ Clicca <strong>al centro</strong> della linea per cancellare</li>
             </ul>
             <button id="btn-close-help" class="btn-main" style="background:#292524; color:white; box-shadow:none; border:1px solid #44403c; margin-top:2rem;">Chiudi</button>
         </div>
     </div>
 
     <div class="controls">
-        <button id="btn-reset" class="btn-icon" title="Reset">
+        <button id="btn-reset" class="btn-icon" title="Ricomincia">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         </button>
-        <button id="btn-help" class="btn-icon" title="Info">
+        <button id="btn-help" class="btn-icon" title="Aiuto">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </button>
     </div>
@@ -133,10 +127,10 @@
         const CONFIG = {
             GRID: 7,
             CELL: 50,
-            PAD: 30, // Padding per non tagliare i bordi
-            SIZE: 360, // 6 celle * 50 + 60 pad
+            PAD: 30,
+            SIZE: 360,
             NODE_RADIUS: 18,
-            CLICK_TOLERANCE: 22 // Raggio leggermente più grande per il tocco
+            CLICK_TOLERANCE: 22
         };
 
         class NexusGame {
@@ -149,12 +143,10 @@
                 this.bridges = [];
                 this.drag = { active: false, start: null, curr: null, target: null, valid: false };
 
-                // Gestione Eventi Unificata
                 this.svg.addEventListener('pointerdown', e => this.handleDown(e));
                 window.addEventListener('pointermove', e => this.handleMove(e));
                 window.addEventListener('pointerup', e => this.handleUp(e));
                 
-                // Binding UI
                 document.getElementById('btn-reset').onclick = () => this.restart();
                 document.getElementById('btn-next').onclick = () => this.newLevel();
                 document.getElementById('btn-help').onclick = () => document.getElementById('help-overlay').classList.add('active');
@@ -163,14 +155,14 @@
                 this.newLevel();
             }
 
-            // --- GENERATORE DI LIVELLI MIGLIORATO ---
+            // --- GENERATORE DI LIVELLI ---
             generate() {
                 let bestLevel = null;
-                // Genera 5 candidati e prendi quello con il miglior bilanciamento
-                for(let k=0; k<5; k++) {
+                // Generiamo più opzioni e teniamo quella più bilanciata
+                for(let k=0; k<10; k++) {
                     const candidate = this.tryGenerateBoard();
                     if(candidate) {
-                        // Criterio di qualità: preferiamo livelli con un numero medio di nodi (tra 7 e 10)
+                        // Preferiamo livelli tra 7 e 10 nodi per un buon passatempo
                         if(!bestLevel || (candidate.nodes.length >= 7 && candidate.nodes.length <= 10)) {
                             bestLevel = candidate;
                         }
@@ -180,27 +172,25 @@
                 if(bestLevel) {
                     this.level = bestLevel.nodes;
                 } else {
-                    // Fallback di sicurezza estrema
+                    // Fallback di sicurezza
                     this.level = [{x:1,y:1,req:2,id:'a'},{x:5,y:1,req:2,id:'b'},{x:1,y:5,req:2,id:'c'},{x:5,y:5,req:2,id:'d'}];
                 }
             }
 
             tryGenerateBoard() {
                 let nodes = [];
-                // 1. Griglia sparsa
+                // 1. Griglia
                 for(let y=0; y<CONFIG.GRID; y++) {
                     for(let x=0; x<CONFIG.GRID; x++) {
-                        // Densità controllata per non sovraffollare
-                        if(Math.random() > 0.65) nodes.push({x, y, id: `${x}-${y}`, req: 0});
+                        if(Math.random() > 0.60) nodes.push({x, y, id: `${x}-${y}`, req: 0});
                     }
                 }
                 if(nodes.length < 6) return null;
 
-                // 2. Connessione (Spanning Tree)
-                // Usiamo un algoritmo "Greedy" randomizzato per connettere tutto
+                // 2. Connetti tutto (Albero di copertura)
                 let connected = [nodes[0]];
                 let pool = nodes.slice(1);
-                let solutionBridges = []; // Soluzione interna per calcolare i requisiti
+                let solutionBridges = []; 
 
                 while(pool.length > 0) {
                     let possibleMoves = [];
@@ -211,80 +201,68 @@
                             }
                         }
                     }
-                    if(possibleMoves.length === 0) return null; // Vicolo cieco, scarta board
+                    if(possibleMoves.length === 0) return null; // Fallito
                     
-                    // Scegli una connessione random
                     const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-                    
-                    // 30% di probabilità di doppio ponte immediato (aumenta varietà)
-                    const count = Math.random() > 0.7 ? 2 : 1;
+                    // Mix di singoli e doppi ponti per rendere possibili numeri alti
+                    const count = Math.random() > 0.65 ? 2 : 1;
                     
                     solutionBridges.push({p1: move.src, p2: move.dst, count: count});
                     connected.push(move.dst);
                     pool = pool.filter(n => n !== move.dst);
                 }
 
-                // 3. Aggiungi cicli extra (per non renderlo solo un albero lineare)
-                // Cerchiamo di aggiungere ~30% di connessioni in più rispetto al minimo
-                const extraLinksTarget = Math.floor(nodes.length * 0.3);
-                let extraLinks = 0;
+                // 3. Aggiungi complessità (Cicli extra)
                 let attempts = 0;
-                
-                while(extraLinks < extraLinksTarget && attempts < 50) {
+                while(attempts < 20) {
                     attempts++;
                     const n1 = nodes[Math.floor(Math.random()*nodes.length)];
                     const n2 = nodes[Math.floor(Math.random()*nodes.length)];
                     
                     if(n1 !== n2 && this.isPathClear(n1, n2, nodes, solutionBridges)) {
-                        // Non vogliamo troppi doppi ponti nei cicli extra, meglio singoli per chiudere
                         solutionBridges.push({p1: n1, p2: n2, count: 1});
-                        extraLinks++;
                     }
                 }
 
-                // 4. Calcola i numeri (Requirements) basandoci sulla soluzione generata
+                // 4. Calcola requisiti
                 nodes.forEach(n => {
                     n.req = 0;
                     solutionBridges.forEach(b => { if(b.p1===n || b.p2===n) n.req += b.count; });
                 });
 
-                // Filtra nodi isolati (non dovrebbero esserci ma sicurezza)
                 return { nodes: nodes.filter(n => n.req > 0 && n.req <= 8) };
             }
 
-            // --- LOGICA DI CONTROLLO SPAZIALE ---
+            // --- LOGICA ---
             isPathClear(n1, n2, allNodes, currentBridges) {
-                // Deve essere ortogonale
                 if(n1.x !== n2.x && n1.y !== n2.y) return false;
                 
-                // Bounds rect
                 const minX=Math.min(n1.x,n2.x), maxX=Math.max(n1.x,n2.x);
                 const minY=Math.min(n1.y,n2.y), maxY=Math.max(n1.y,n2.y);
 
-                // Ostacolo Nodo intermedio
+                // Ostacoli (Nodi)
                 for(let n of allNodes) {
                     if(n===n1 || n===n2) continue;
-                    // Se il nodo è esattamente sulla linea tra n1 e n2
                     if(n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY && (n.x===n1.x || n.y===n1.y)) return false;
                 }
                 
-                // Incrocio Ponte
+                // Ostacoli (Ponti)
                 for(let b of currentBridges) {
-                    // Check incrocio geometrico
+                    // Se stiamo controllando lo stesso ponte che vogliamo aggiornare, NON è un ostacolo!
+                    // (Logica cruciale per permettere i doppi ponti)
+                    if((b.p1===n1 && b.p2===n2) || (b.p1===n2 && b.p2===n1)) continue;
+
+                    // Altrimenti check normale incroci
                     if(this.intersects(n1, n2, b.p1, b.p2)) return false;
                     
-                    // Check sovrapposizione parallela (Colineare)
-                    // Se sono sulla stessa linea, non devono sovrapporsi
+                    // Check sovrapposizione colineare
                     if((n1.x===n2.x && b.p1.x===b.p2.x && n1.x===b.p1.x) || 
                        (n1.y===n2.y && b.p1.y===b.p2.y && n1.y===b.p1.y)) {
-                        
-                        // Calcola range di sovrapposizione
                         const s1_min = n1.x===n2.x ? minY : minX;
                         const s1_max = n1.x===n2.x ? maxY : maxX;
                         const s2_min = b.p1.x===b.p2.x ? Math.min(b.p1.y,b.p2.y) : Math.min(b.p1.x,b.p2.x);
                         const s2_max = b.p1.x===b.p2.x ? Math.max(b.p1.y,b.p2.y) : Math.max(b.p1.x,b.p2.x);
                         
-                        // Se si sovrappongono parzialmente o totalmente
                         if(Math.max(s1_min, s2_min) < Math.min(s1_max, s2_max)) return false;
                     }
                 }
@@ -292,9 +270,9 @@
             }
 
             intersects(a, b, c, d) {
-                let v1 = a.x===b.x; // AB è verticale?
-                let v2 = c.x===d.x; // CD è verticale?
-                if(v1 === v2) return false; // Paralleli (gestiti separatamente)
+                let v1 = a.x===b.x;
+                let v2 = c.x===d.x;
+                if(v1 === v2) return false;
 
                 let x1=Math.min(a.x,b.x), x2=Math.max(a.x,b.x), y1=Math.min(a.y,b.y), y2=Math.max(a.y,b.y);
                 let x3=Math.min(c.x,d.x), x4=Math.max(c.x,d.x), y3=Math.min(c.y,d.y), y4=Math.max(c.y,d.y);
@@ -302,7 +280,7 @@
                 return v1 ? (x1>x3 && x1<x4 && y3>y1 && y3<y2) : (x3>x1 && x3<x2 && y1>y3 && y1<y4);
             }
 
-            // --- INPUT HANDLING ---
+            // --- INPUT ---
             getPos(e) {
                 const rect = this.svg.getBoundingClientRect();
                 return { 
@@ -314,38 +292,35 @@
             handleDown(e) {
                 const pos = this.getPos(e);
                 
-                // 1. PRIORITÀ ALLE ISOLE (Drag Start)
-                // Risolve il problema di cancellare i ponti quando si clicca un nodo
+                // 1. PRIORITÀ TRASCINAMENTO (Nodi)
                 for(let n of this.level) {
                     const p = this.coord(n);
                     if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.CLICK_TOLERANCE) {
                         this.drag = { active: true, start: n.id, curr: pos, target: null, valid: false };
                         this.setStatus("TRASCINA...", "ok");
                         this.render();
-                        return; // Esci subito, non controllare i ponti
+                        return; 
                     }
                 }
 
-                // 2. CHECK CANCELLAZIONE PONTE
-                // Solo se non abbiamo cliccato un'isola
+                // 2. CANCELLAZIONE (Solo se clicchi lontano dai nodi)
                 for(let i=0; i<this.bridges.length; i++) {
                     const b = this.bridges[i];
                     const n1 = this.level.find(n=>n.id===b.from);
                     const n2 = this.level.find(n=>n.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     
-                    // Distanza punto-segmento
                     const l2 = (p1.x-p2.x)**2 + (p1.y-p2.y)**2;
                     let t = ((pos.x-p1.x)*(p2.x-p1.x) + (pos.y-p1.y)*(p2.y-p1.y)) / l2;
-                    t = Math.max(0, Math.min(1, t)); // Clamping
                     
-                    // Ignora click troppo vicini agli estremi (per evitare conflitti futuri)
-                    if (t < 0.1 || t > 0.9) continue;
+                    // FIX CRUCIALE: Ignora i click vicini agli estremi (i nodi)
+                    // Accetta solo click nella fascia centrale (20% - 80%) del ponte
+                    if (t < 0.2 || t > 0.8) continue;
 
                     const proj = { x: p1.x + t*(p2.x-p1.x), y: p1.y + t*(p2.y-p1.y) };
                     const dist = Math.sqrt((pos.x-proj.x)**2 + (pos.y-proj.y)**2);
                     
-                    if(dist < 15) { // Hitbox ponte
+                    if(dist < 15) { 
                         if(b.count===2) b.count=1; else this.bridges.splice(i,1);
                         this.render(); this.checkWin(); return;
                     }
@@ -357,7 +332,6 @@
                 const pos = this.getPos(e);
                 this.drag.curr = pos;
 
-                // Trova target vicino
                 let target = null;
                 for(let n of this.level) {
                     if(n.id === this.drag.start) continue;
@@ -367,14 +341,13 @@
                     }
                 }
 
-                // Validazione al volo
                 let valid = false;
                 let msg = "CERCA UN NODO";
                 
                 if(target) {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const dst = this.level.find(x=>x.id===target);
-                    // Mock bridge per check
+                    // Converti i ponti attuali in oggetti nodo per il check
                     const currentBridgesAsObjects = this.bridges.map(b => ({
                         p1: this.level.find(x=>x.id===b.from),
                         p2: this.level.find(x=>x.id===b.to)
@@ -385,7 +358,6 @@
                         msg = "PERCORSO OSTRUITO";
                     }
                 } else {
-                    // Axis Snap visivo per aiutare
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
                     if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) msg="ORIZZONTALE...";
@@ -403,13 +375,12 @@
                 
                 if(this.drag.valid && this.drag.target) {
                     const [id1, id2] = [this.drag.start, this.drag.target].sort();
-                    // Controlla se esiste già
                     const ex = this.bridges.find(b => b.from===id1 && b.to===id2);
                     
                     if(ex) {
-                        // Ciclo: 1 -> 2 -> 0 (rimuovi)
+                        // UPGRADE a Doppio ponte (non rimuove più, solo upgrade)
                         if(ex.count===1) ex.count=2; 
-                        else this.bridges = this.bridges.filter(b=>b!==ex);
+                        // Se è già 2, non fa nulla (o rimuove? Meglio non rimuovere trascinando per evitare errori)
                     } else {
                         this.bridges.push({from:id1, to:id2, count:1});
                     }
@@ -432,20 +403,20 @@
             render() {
                 let h = '';
                 
-                // Griglia di sfondo (Dots)
+                // Griglia
                 for(let y=0; y<CONFIG.GRID; y++) for(let x=0; x<CONFIG.GRID; x++) {
                     const p = this.coord({x,y});
                     h += `<circle cx="${p.x}" cy="${p.y}" r="1" fill="#44403c"/>`;
                 }
 
-                // Bridges
+                // Ponti
                 this.bridges.forEach(b => {
                     const n1 = this.level.find(x=>x.id===b.from);
                     const n2 = this.level.find(x=>x.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     const off = 3;
                     
-                    // Hitbox invisibile molto larga per facilitare il click
+                    // Hitbox invisibile (Solo centrale per cancellazione sicura)
                     h += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="transparent" stroke-width="20" stroke-linecap="round"/>`;
                     
                     if(b.count === 1) {
@@ -457,25 +428,24 @@
                     }
                 });
 
-                // Drag Line (guida visiva)
+                // Linea di trascinamento
                 if(this.drag.active) {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
                     let end = this.drag.curr;
-                    let color = "#fbbf24"; // Amber (default)
+                    let color = "#fbbf24"; 
 
                     if(this.drag.target) {
                         const t = this.level.find(x=>x.id===this.drag.target);
                         end = this.coord(t);
                         color = this.drag.valid ? "#22d3ee" : "#ef4444";
                     } else {
-                        // Axis snapping visivo
                         if(Math.abs(end.x-p.x) > Math.abs(end.y-p.y)) end.y = p.y; else end.x = p.x;
                     }
                     h += `<line x1="${p.x}" y1="${p.y}" x2="${end.x}" y2="${end.y}" stroke="${color}" stroke-width="2" stroke-dasharray="5,5"/>`;
                 }
 
-                // Nodes (Islands)
+                // Nodi
                 this.level.forEach(n => {
                     const p = this.coord(n);
                     let cur = 0;
@@ -484,10 +454,9 @@
                     let fill="#1c1917", stroke="#57534e", r=CONFIG.NODE_RADIUS;
                     let cls = "";
 
-                    if(cur===n.req) { fill="#083344"; stroke="#0891b2"; cls="node-complete"; } // Completo
-                    else if(cur>n.req) { fill="#450a0a"; stroke="#ef4444"; } // Errore (Troppi ponti)
+                    if(cur===n.req) { fill="#083344"; stroke="#0891b2"; cls="node-complete"; } 
+                    else if(cur>n.req) { fill="#450a0a"; stroke="#ef4444"; } 
 
-                    // Drag highlight
                     if(this.drag.active) {
                         if(n.id===this.drag.start) { stroke="#fbbf24"; }
                         if(n.id===this.drag.target) { r=22; }
@@ -507,7 +476,6 @@
                 });
                 if(!ok) return;
                 
-                // BFS Connectivity Check
                 let adj={}; this.level.forEach(n=>adj[n.id]=[]);
                 this.bridges.forEach(b=>{adj[b.from].push(b.to); adj[b.to].push(b.from);});
                 let q=[this.level[0].id], vis=new Set([this.level[0].id]);
@@ -535,7 +503,6 @@
             }
         }
 
-        // START
         window.onload = () => new NexusGame();
     </script>
 </body>
