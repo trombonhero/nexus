@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS - Experience</title>
+    <title>NEXUS - Advanced Interaction</title>
     <style>
         /* THEME CONFIG */
         :root { 
@@ -15,7 +15,7 @@
             --dim: #52525b;
             --error: #ef4444;
             --success: #22d3ee;
-            --node-fill-complete: #083344; /* Blu profondo per nodi completi */
+            --node-fill-complete: #083344;
         }
 
         /* LAYOUT BASE */
@@ -32,41 +32,41 @@
             gap: 1rem;
         }
 
-        /* HEADER COMPATTO */
-        .header {
-            text-align: center;
-            flex-shrink: 0;
-            z-index: 10;
-        }
+        /* HEADER */
+        .header { text-align: center; flex-shrink: 0; z-index: 10; width: 100%; padding: 0 1rem; }
         h1 {
             font-size: 2rem; letter-spacing: 0.4em; margin: 0;
             color: var(--accent); text-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
-            font-weight: 300;
-            line-height: 1.2;
+            font-weight: 300; line-height: 1.2;
         }
         .status-bar {
-            font-size: 0.7rem; letter-spacing: 0.15em; color: var(--dim);
+            font-size: 0.8rem; letter-spacing: 0.05em; color: var(--dim);
             text-transform: uppercase; font-weight: bold;
             display: flex; align-items: center; justify-content: center; gap: 0.5em;
-            margin-top: 0.2rem;
+            margin-top: 0.5rem; min-height: 1.5em;
+            transition: color 0.3s;
         }
         .status-dot { width: 6px; height: 6px; background: var(--dim); border-radius: 50%; transition: 0.3s; }
+        
+        /* Stati Status Bar */
+        .status-bar.ok { color: var(--success); }
         .status-bar.ok .status-dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        
+        .status-bar.err { color: var(--error); }
         .status-bar.err .status-dot { background: var(--error); box-shadow: 0 0 8px var(--error); }
+        
+        .status-bar.hint-active { color: var(--hint); }
+        .status-bar.hint-active .status-dot { background: var(--hint); box-shadow: 0 0 8px var(--hint); }
 
-        /* GAME BOARD RESPONSIVA */
+        /* GAME BOARD */
         .game-board {
             position: relative;
             background: var(--panel);
             border: 1px solid #27272a;
             border-radius: 1.5rem;
             box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
-            
-            /* Logica di dimensionamento */
             aspect-ratio: 1/1;
-            width: 92vw;
-            max-width: 600px;
-            /* Calcolo: 100vh - (Header ~80px) - (Controlli ~100px) - (Gap vari) */
+            width: 92vw; max-width: 600px;
             max-height: calc(100vh - 180px);
             flex-shrink: 1; 
         }
@@ -117,10 +117,9 @@
         }
         .btn-main:active { transform: scale(0.95); }
 
-        /* ANIMAZIONI & COLORI */
+        /* ANIMAZIONI & CLASSI SVG */
         @keyframes pulse-success { 0% { stroke-opacity: 1; } 50% { stroke-opacity: 0.6; } 100% { stroke-opacity: 1; } }
         
-        /* Stili dinamici applicati via JS, ma definiti qui per chiarezza */
         .node-base { transition: fill 0.3s, stroke 0.3s; }
         .node-complete { 
             stroke: var(--success); 
@@ -130,8 +129,10 @@
         }
         .node-error { stroke: var(--error); fill: #3f1313; }
         
-        @keyframes hint-pulse { 0% { opacity: 0; stroke-width: 2; } 50% { opacity: 1; stroke-width: 4; } 100% { opacity: 0; stroke-width: 2; } }
-        .hint-line { stroke: var(--hint); stroke-dasharray: 8 4; animation: hint-pulse 1.5s infinite; }
+        /* Hint Animation */
+        @keyframes hint-pulse { 0% { stroke-width: 2; stroke-opacity:0.5; } 50% { stroke-width: 5; stroke-opacity:1; } 100% { stroke-width: 2; stroke-opacity:0.5; } }
+        .node-hint { stroke: var(--hint) !important; animation: hint-pulse 1s infinite; }
+        
     </style>
 </head>
 <body>
@@ -183,9 +184,11 @@
                 
                 this.level = [];
                 this.bridges = [];
-                this.hint = null; 
+                this.solution = []; // Memorizza la soluzione generata per gli hint
+                this.hintState = null; // { targetNodeId, message }
                 this.drag = { active: false, start: null, curr: null, target: null, valid: false };
 
+                // Event Listeners
                 this.svg.addEventListener('pointerdown', e => this.handleDown(e));
                 window.addEventListener('pointermove', e => this.handleMove(e));
                 window.addEventListener('pointerup', e => this.handleUp(e));
@@ -193,37 +196,70 @@
                 document.getElementById('btn-reset').onclick = () => this.resetBoard();
                 document.getElementById('btn-next').onclick = () => this.newLevel();
                 document.getElementById('btn-next-win').onclick = () => this.newLevel();
-                document.getElementById('btn-hint').onclick = () => this.triggerHint();
+                document.getElementById('btn-hint').onclick = () => this.provideHint();
 
                 this.newLevel();
             }
 
-            // --- HINT SYSTEM ---
-            triggerHint() {
-                this.hint = null;
-                const incompleteNodes = this.level.filter(n => {
-                    let cur = 0;
-                    this.bridges.forEach(b => { if(b.from===n.id || b.to===n.id) cur+=b.count; });
-                    return cur < n.req;
-                });
+            // --- AI HINT SYSTEM ---
+            provideHint() {
+                this.hintState = null;
+                
+                // 1. Cerca errori: Ponti che NON esistono nella soluzione
+                // O ponti con conteggio sbagliato (es. 2 invece di 1)
+                for(let b of this.bridges) {
+                    const solBridge = this.solution.find(s => 
+                        (s.p1.id === b.from && s.p2.id === b.to) || 
+                        (s.p1.id === b.to && s.p2.id === b.from)
+                    );
 
-                if(incompleteNodes.length > 0) {
-                    incompleteNodes.sort(() => Math.random() - 0.5);
-                    for(let src of incompleteNodes) {
-                        const targets = this.level.filter(dst => dst !== src && this.isPathClear(src, dst, this.level, this.bridges));
-                        for(let dst of targets) {
-                            let dstCur = 0;
-                            this.bridges.forEach(b => { if(b.from===dst.id || b.to===dst.id) dstCur+=b.count; });
-                            if(dstCur < dst.req) {
-                                this.hint = { p1: this.coord(src), p2: this.coord(dst), active: true };
-                                setTimeout(() => { this.hint = null; this.render(); }, 3000);
-                                this.render();
-                                return;
-                            }
-                        }
+                    // Se il ponte non esiste nella soluzione OPPURE il conteggio è superiore alla soluzione
+                    if (!solBridge || b.count > solBridge.count) {
+                        this.hintState = { 
+                            nodes: [b.from, b.to], 
+                            message: "COLLEGAMENTO IN ECCESSO. RIMUOVI." 
+                        };
+                        this.setStatus(this.hintState.message, "hint-active");
+                        this.render();
+                        return;
                     }
                 }
-                this.render();
+
+                // 2. Cerca mancanze: Nodi che hanno meno connessioni del necessario
+                // Scegliamo un nodo che nella soluzione ha un collegamento non ancora fatto
+                for(let solBridge of this.solution) {
+                    const currentBridge = this.bridges.find(b => 
+                        (b.from === solBridge.p1.id && b.to === solBridge.p2.id) ||
+                        (b.from === solBridge.p2.id && b.to === solBridge.p1.id)
+                    );
+
+                    // Se manca il ponte o è inferiore
+                    if (!currentBridge || currentBridge.count < solBridge.count) {
+                        // Determina quale dei due nodi suggerire (quello con più bisogno)
+                        const n1 = this.level.find(n => n.id === solBridge.p1.id);
+                        // Suggeriamo solo se il nodo non è già "pieno" (anche se in modo errato, ma quello lo copre il punto 1)
+                        // Qui assumiamo che se siamo arrivati al punto 2, non ci sono ponti "sbagliati"
+                        
+                        this.hintState = {
+                            nodes: [n1.id, solBridge.p2.id],
+                            message: "COLLEGAMENTO RICHIESTO QUI."
+                        };
+                        this.setStatus(this.hintState.message, "hint-active");
+                        this.render();
+                        
+                        // Auto-hide dopo 4 secondi
+                        setTimeout(() => {
+                            if(this.hintState) {
+                                this.hintState = null;
+                                this.setStatus("SISTEMA ONLINE", "");
+                                this.render();
+                            }
+                        }, 4000);
+                        return;
+                    }
+                }
+                
+                this.setStatus("NESSUN SUGGERIMENTO DISPONIBILE", "");
             }
 
             // --- LEVEL GEN ---
@@ -235,7 +271,14 @@
                         bestLevel = candidate;
                     }
                 }
-                this.level = bestLevel ? bestLevel.nodes : this.getFallbackLevel();
+                if (bestLevel) {
+                    this.level = bestLevel.nodes;
+                    this.solution = bestLevel.bridges; // Salviamo la soluzione!
+                } else {
+                    const fb = this.getFallbackLevel();
+                    this.level = fb.nodes;
+                    this.solution = fb.bridges;
+                }
             }
 
             tryGenerateBoard() {
@@ -279,13 +322,24 @@
                     solutionBridges.forEach(b => { if(b.p1===n || b.p2===n) n.req += b.count; });
                 });
 
-                return { nodes: nodes.filter(n => n.req > 0 && n.req <= 8) };
+                return { 
+                    nodes: nodes.filter(n => n.req > 0 && n.req <= 8),
+                    bridges: solutionBridges 
+                };
             }
 
             getFallbackLevel() {
-                return [{x:1,y:1,req:2,id:'a'},{x:5,y:1,req:2,id:'b'},{x:1,y:5,req:2,id:'c'},{x:5,y:5,req:2,id:'d'}];
+                const nodes = [{x:1,y:1,req:2,id:'a'},{x:5,y:1,req:2,id:'b'},{x:1,y:5,req:2,id:'c'},{x:5,y:5,req:2,id:'d'}];
+                const bridges = [
+                    {p1: nodes[0], p2: nodes[1], count: 1},
+                    {p1: nodes[1], p2: nodes[3], count: 1},
+                    {p1: nodes[3], p2: nodes[2], count: 1},
+                    {p1: nodes[2], p2: nodes[0], count: 1}
+                ];
+                return { nodes, bridges };
             }
 
+            // --- LOGICA SPAZIALE ---
             isPathClear(n1, n2, allNodes, bridges) {
                 if(n1.x !== n2.x && n1.y !== n2.y) return false;
                 const minX=Math.min(n1.x,n2.x), maxX=Math.max(n1.x,n2.x);
@@ -335,39 +389,36 @@
                 };
             }
 
+            // --- INPUT ---
             handleDown(e) {
                 const pos = this.getPos(e);
                 
-                // 1. PRIORITA CANCELLAZIONE (Se clicchi esattamente in mezzo)
+                // 1. DRAG START (Priorità)
+                for(let n of this.level) {
+                    const p = this.coord(n);
+                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
+                        this.drag = { active: true, start: n.id, curr: pos, target: null, valid: false };
+                        this.hintState = null; 
+                        this.setStatus("TRASCINA...", "ok");
+                        this.render(); return; 
+                    }
+                }
+
+                // 2. CLICK CANCELLAZIONE (Backup)
                 for(let i=0; i<this.bridges.length; i++) {
                     const b = this.bridges[i];
                     const n1 = this.level.find(n=>n.id===b.from), n2 = this.level.find(n=>n.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     
                     const lenSq = (p1.x-p2.x)**2 + (p1.y-p2.y)**2;
-                    const len = Math.sqrt(lenSq);
                     let t = ((pos.x-p1.x)*(p2.x-p1.x) + (pos.y-p1.y)*(p2.y-p1.y)) / lenSq;
                     
-                    // Solo click nella zona "sicura" tra i due cerchi
-                    // Calcoliamo la distanza sicura basata sul raggio del nodo
-                    const safeMargin = (CONFIG.NODE_RADIUS + 4) / len; 
-                    if (t < safeMargin || t > (1 - safeMargin)) continue;
+                    if (t < 0.2 || t > 0.8) continue;
 
                     const proj = { x: p1.x + t*(p2.x-p1.x), y: p1.y + t*(p2.y-p1.y) };
                     if(Math.hypot(pos.x-proj.x, pos.y-proj.y) < 20) { 
                         if(b.count===2) b.count=1; else this.bridges.splice(i,1);
                         this.render(); this.checkWin(); return;
-                    }
-                }
-
-                // 2. DRAG START (Se non hai cancellato nulla)
-                for(let n of this.level) {
-                    const p = this.coord(n);
-                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
-                        this.drag = { active: true, start: n.id, curr: pos, target: null, valid: false };
-                        this.hint = null; 
-                        this.setStatus("TRASCINA...", "ok");
-                        this.render(); return; 
                     }
                 }
             }
@@ -397,13 +448,23 @@
                         p2: this.level.find(x=>x.id===b.to)
                     }));
                     if(this.isPathClear(src, dst, this.level, curBridgesObj)) {
-                        valid = true; msg = "RILASCIA PER CONNETTERE";
+                        valid = true; 
+                        
+                        // Previsione azione (Cosa succederà se rilascio?)
+                        const existing = this.bridges.find(b => 
+                            (b.from === src.id && b.to === dst.id) || 
+                            (b.from === dst.id && b.to === src.id)
+                        );
+                        if (!existing) msg = "CREA COLLEGAMENTO";
+                        else if (existing.count === 1) msg = "RINFORZA (DOPPIO)";
+                        else msg = "RIMUOVI COLLEGAMENTI"; // Cycle 3: Delete
+                        
                     } else msg = "PERCORSO OSTRUITO";
                 } else {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
-                    if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) { pos.y = p.y; msg="ORIZZONTALE"; } 
-                    else { pos.x = p.x; msg="VERTICALE"; }
+                    if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) { pos.y = p.y; } 
+                    else { pos.x = p.x; }
                 }
 
                 this.drag.target = target;
@@ -417,7 +478,11 @@
                 if(this.drag.valid && this.drag.target) {
                     const [id1, id2] = [this.drag.start, this.drag.target].sort();
                     const ex = this.bridges.find(b => b.from===id1 && b.to===id2);
-                    if(ex) { if(ex.count===1) ex.count=2; }
+                    if(ex) { 
+                        // CICLO: 1 -> 2 -> 0 (Elimina)
+                        if(ex.count===1) ex.count=2; 
+                        else this.bridges = this.bridges.filter(b=>b!==ex);
+                    }
                     else { this.bridges.push({from:id1, to:id2, count:1}); }
                 }
                 this.drag.active = false;
@@ -458,10 +523,6 @@
                     }
                 });
 
-                if(this.hint && this.hint.active) {
-                    h += `<line x1="${this.hint.p1.x}" y1="${this.hint.p1.y}" x2="${this.hint.p2.x}" y2="${this.hint.p2.y}" class="hint-line" stroke-width="3"/>`;
-                }
-
                 if(this.drag.active) {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
@@ -483,6 +544,11 @@
                     
                     let cls = "node-base";
                     let fill="#18181b", stroke="#52525b";
+
+                    // Hint Highlight
+                    if(this.hintState && this.hintState.nodes.includes(n.id)) {
+                        cls += " node-hint";
+                    }
 
                     if(cur===n.req) { cls="node-complete"; } 
                     else if(cur>n.req) { cls="node-error"; } 
