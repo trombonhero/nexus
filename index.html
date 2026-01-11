@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS - Safe Layout</title>
+    <title>NEXUS - Experience</title>
     <style>
         /* THEME CONFIG */
         :root { 
@@ -15,6 +15,7 @@
             --dim: #52525b;
             --error: #ef4444;
             --success: #22d3ee;
+            --node-fill-complete: #083344; /* Blu profondo per nodi completi */
         }
 
         /* LAYOUT BASE */
@@ -28,10 +29,32 @@
             overflow: hidden;
             touch-action: none;
             user-select: none;
-            gap: 1.5rem; /* Spazio sicuro tra gioco e bottoni */
+            gap: 1rem;
         }
 
-        /* GAME BOARD RESPONSIVA E SICURA */
+        /* HEADER COMPATTO */
+        .header {
+            text-align: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        h1 {
+            font-size: 2rem; letter-spacing: 0.4em; margin: 0;
+            color: var(--accent); text-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+            font-weight: 300;
+            line-height: 1.2;
+        }
+        .status-bar {
+            font-size: 0.7rem; letter-spacing: 0.15em; color: var(--dim);
+            text-transform: uppercase; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 0.5em;
+            margin-top: 0.2rem;
+        }
+        .status-dot { width: 6px; height: 6px; background: var(--dim); border-radius: 50%; transition: 0.3s; }
+        .status-bar.ok .status-dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-bar.err .status-dot { background: var(--error); box-shadow: 0 0 8px var(--error); }
+
+        /* GAME BOARD RESPONSIVA */
         .game-board {
             position: relative;
             background: var(--panel);
@@ -39,43 +62,36 @@
             border-radius: 1.5rem;
             box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
             
-            /* Logica di dimensionamento "Quadrato Perfetto" che non esce mai dallo schermo */
+            /* Logica di dimensionamento */
             aspect-ratio: 1/1;
-            
-            /* 1. Occupa il 90% della larghezza disponibile... */
-            width: 90vw;
+            width: 92vw;
             max-width: 600px;
-            
-            /* 2. ...MA non superare mai l'altezza dello schermo meno lo spazio per i bottoni (circa 140px) */
-            max-height: calc(100vh - 140px);
-            
-            /* Questo garantisce che il quadrato si rimpicciolisca se lo schermo è troppo basso */
+            /* Calcolo: 100vh - (Header ~80px) - (Controlli ~100px) - (Gap vari) */
+            max-height: calc(100vh - 180px);
             flex-shrink: 1; 
         }
         svg { width: 100%; height: 100%; display: block; cursor: crosshair; border-radius: 1.5rem; }
 
-        /* CONTROLLI STATICI (Non più fluttuanti sopra) */
+        /* CONTROLLI */
         .controls-bar {
-            /* Posizione nel flusso normale, sotto il gioco */
             position: relative; 
             display: flex; gap: 1.5rem;
             background: rgba(24, 24, 27, 0.5);
-            padding: 0.8rem 2rem;
+            padding: 0.6rem 2rem;
             border-radius: 3rem;
             border: 1px solid #27272a;
-            flex-shrink: 0; /* Impedisce che i bottoni si schiaccino */
+            flex-shrink: 0;
         }
 
         .btn-icon {
             background: transparent; border: none; color: var(--dim);
-            width: 3.5rem; height: 3.5rem; border-radius: 50%;
+            width: 3.2rem; height: 3.2rem; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
         }
         .btn-icon:active { transform: scale(0.85); }
         .btn-icon:hover { color: var(--text); background: #27272a; }
-        .btn-icon svg { width: 1.8rem; height: 1.8rem; pointer-events: none; stroke-width: 2px; }
+        .btn-icon svg { width: 1.6rem; height: 1.6rem; pointer-events: none; stroke-width: 2px; }
         
         #btn-hint:hover { color: var(--hint); }
         #btn-next:hover { color: var(--success); }
@@ -101,15 +117,29 @@
         }
         .btn-main:active { transform: scale(0.95); }
 
-        /* ANIMAZIONI */
-        @keyframes pulse-success { 0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); } }
-        .node-complete { stroke: var(--success); fill: #0f172a; animation: pulse-success 2s infinite; }
+        /* ANIMAZIONI & COLORI */
+        @keyframes pulse-success { 0% { stroke-opacity: 1; } 50% { stroke-opacity: 0.6; } 100% { stroke-opacity: 1; } }
+        
+        /* Stili dinamici applicati via JS, ma definiti qui per chiarezza */
+        .node-base { transition: fill 0.3s, stroke 0.3s; }
+        .node-complete { 
+            stroke: var(--success); 
+            fill: var(--node-fill-complete); 
+            filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.3));
+            animation: pulse-success 3s infinite;
+        }
+        .node-error { stroke: var(--error); fill: #3f1313; }
         
         @keyframes hint-pulse { 0% { opacity: 0; stroke-width: 2; } 50% { opacity: 1; stroke-width: 4; } 100% { opacity: 0; stroke-width: 2; } }
         .hint-line { stroke: var(--hint); stroke-dasharray: 8 4; animation: hint-pulse 1.5s infinite; }
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <h1>NEXUS</h1>
+        <div id="status" class="status-bar"><div class="status-dot"></div><span id="status-msg">SISTEMA ONLINE</span></div>
+    </div>
 
     <div id="game-container" class="game-board">
         <svg id="canvas" viewBox="0 0 360 360"></svg>
@@ -148,6 +178,8 @@
             constructor() {
                 this.svg = document.getElementById('canvas');
                 this.winOverlay = document.getElementById('win-overlay');
+                this.statusMsg = document.getElementById('status-msg');
+                this.statusBox = document.getElementById('status');
                 
                 this.level = [];
                 this.bridges = [];
@@ -306,29 +338,36 @@
             handleDown(e) {
                 const pos = this.getPos(e);
                 
-                for(let n of this.level) {
-                    const p = this.coord(n);
-                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
-                        this.drag = { active: true, start: n.id, curr: pos, target: null, valid: false };
-                        this.hint = null; 
-                        this.render(); return; 
-                    }
-                }
-
+                // 1. PRIORITA CANCELLAZIONE (Se clicchi esattamente in mezzo)
                 for(let i=0; i<this.bridges.length; i++) {
                     const b = this.bridges[i];
                     const n1 = this.level.find(n=>n.id===b.from), n2 = this.level.find(n=>n.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     
                     const lenSq = (p1.x-p2.x)**2 + (p1.y-p2.y)**2;
+                    const len = Math.sqrt(lenSq);
                     let t = ((pos.x-p1.x)*(p2.x-p1.x) + (pos.y-p1.y)*(p2.y-p1.y)) / lenSq;
                     
-                    if (t < 0.2 || t > 0.8) continue;
+                    // Solo click nella zona "sicura" tra i due cerchi
+                    // Calcoliamo la distanza sicura basata sul raggio del nodo
+                    const safeMargin = (CONFIG.NODE_RADIUS + 4) / len; 
+                    if (t < safeMargin || t > (1 - safeMargin)) continue;
 
                     const proj = { x: p1.x + t*(p2.x-p1.x), y: p1.y + t*(p2.y-p1.y) };
                     if(Math.hypot(pos.x-proj.x, pos.y-proj.y) < 20) { 
                         if(b.count===2) b.count=1; else this.bridges.splice(i,1);
                         this.render(); this.checkWin(); return;
+                    }
+                }
+
+                // 2. DRAG START (Se non hai cancellato nulla)
+                for(let n of this.level) {
+                    const p = this.coord(n);
+                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
+                        this.drag = { active: true, start: n.id, curr: pos, target: null, valid: false };
+                        this.hint = null; 
+                        this.setStatus("TRASCINA...", "ok");
+                        this.render(); return; 
                     }
                 }
             }
@@ -348,6 +387,8 @@
                 }
 
                 let valid = false;
+                let msg = "CERCA UN NODO";
+
                 if(target) {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const dst = this.level.find(x=>x.id===target);
@@ -355,15 +396,19 @@
                         p1: this.level.find(x=>x.id===b.from),
                         p2: this.level.find(x=>x.id===b.to)
                     }));
-                    if(this.isPathClear(src, dst, this.level, curBridgesObj)) valid = true;
+                    if(this.isPathClear(src, dst, this.level, curBridgesObj)) {
+                        valid = true; msg = "RILASCIA PER CONNETTERE";
+                    } else msg = "PERCORSO OSTRUITO";
                 } else {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
-                    if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) pos.y = p.y; else pos.x = p.x;
+                    if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) { pos.y = p.y; msg="ORIZZONTALE"; } 
+                    else { pos.x = p.x; msg="VERTICALE"; }
                 }
 
                 this.drag.target = target;
                 this.drag.valid = valid;
+                this.setStatus(msg, valid ? "ok" : (target ? "err" : ""));
                 this.render();
             }
 
@@ -376,11 +421,17 @@
                     else { this.bridges.push({from:id1, to:id2, count:1}); }
                 }
                 this.drag.active = false;
+                this.setStatus("SISTEMA ONLINE", "");
                 this.render();
                 this.checkWin();
             }
 
             coord(n) { return { x: n.x * CONFIG.CELL + CONFIG.PAD, y: n.y * CONFIG.CELL + CONFIG.PAD }; }
+
+            setStatus(txt, type) {
+                this.statusMsg.textContent = txt;
+                this.statusBox.className = "status-bar " + (type || "");
+            }
 
             render() {
                 let h = '';
@@ -430,18 +481,19 @@
                     let cur = 0;
                     this.bridges.forEach(b => { if(b.from===n.id || b.to===n.id) cur+=b.count; });
                     
-                    let fill="#18181b", stroke="#52525b", r=CONFIG.NODE_RADIUS, cls="";
+                    let cls = "node-base";
+                    let fill="#18181b", stroke="#52525b";
 
                     if(cur===n.req) { cls="node-complete"; } 
-                    else if(cur>n.req) { stroke="#ef4444"; fill="#3f1313"; } 
+                    else if(cur>n.req) { cls="node-error"; } 
 
                     if(this.drag.active) {
                         if(n.id===this.drag.start) { stroke="#fbbf24"; }
-                        if(n.id===this.drag.target) { r=20; }
+                        if(n.id===this.drag.target) { stroke="#fff"; }
                     }
 
-                    h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="2" class="${cls}"/>`;
-                    h += `<text x="${p.x}" y="${p.y}" dy="7" text-anchor="middle" fill="${cur===n.req?'#000':'#a1a1aa'}" font-weight="bold" font-size="20" pointer-events="none">${n.req}</text>`;
+                    h += `<circle cx="${p.x}" cy="${p.y}" r="${CONFIG.NODE_RADIUS}" fill="${fill}" stroke="${stroke}" stroke-width="2" class="${cls}"/>`;
+                    h += `<text x="${p.x}" y="${p.y}" dy="7" text-anchor="middle" fill="${cur===n.req?'#fff':'#a1a1aa'}" font-weight="bold" font-size="20" pointer-events="none">${n.req}</text>`;
                 });
 
                 this.svg.innerHTML = h;
