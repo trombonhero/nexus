@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS - Fixed</title>
+    <title>NEXUS - Safe Layout</title>
     <style>
-        /* BASE & THEME */
+        /* THEME CONFIG */
         :root { 
-            --bg: #0c0a09; 
-            --panel: #1c1917; 
-            --accent: #06b6d4; 
-            --text: #e7e5e4;
-            --text-dim: #78716c;
+            --bg: #09090b; 
+            --panel: #18181b; 
+            --accent: #22d3ee; 
+            --hint: #c084fc; 
+            --text: #e4e4e7;
+            --dim: #52525b;
             --error: #ef4444;
             --success: #22d3ee;
         }
+
+        /* LAYOUT BASE */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             margin: 0; padding: 0;
@@ -25,101 +28,109 @@
             overflow: hidden;
             touch-action: none;
             user-select: none;
+            gap: 1.5rem; /* Spazio sicuro tra gioco e bottoni */
         }
 
-        h1 {
-            font-size: 2.5rem; letter-spacing: 0.3em; margin: 0;
-            color: var(--accent); text-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
-            font-weight: 400;
-        }
-        .status {
-            font-size: 0.75rem; letter-spacing: 0.15em; color: var(--text-dim);
-            margin-bottom: 1.5rem; text-transform: uppercase; font-weight: bold;
-            min-height: 1.2em; display: flex; align-items: center; gap: 0.5em;
-        }
-        .status-dot { width: 8px; height: 8px; background: var(--text-dim); border-radius: 50%; transition: 0.3s; }
-        .status.ok .status-dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
-        .status.err .status-dot { background: var(--error); box-shadow: 0 0 8px var(--error); }
-
+        /* GAME BOARD RESPONSIVA E SICURA */
         .game-board {
             position: relative;
             background: var(--panel);
-            border: 1px solid #292524;
-            border-radius: 1rem;
-            box-shadow: 0 20px 60px -10px rgba(0,0,0,0.6);
-            width: 360px; height: 360px; 
-            max-width: 90vw; max-height: 90vw;
+            border: 1px solid #27272a;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
+            
+            /* Logica di dimensionamento "Quadrato Perfetto" che non esce mai dallo schermo */
+            aspect-ratio: 1/1;
+            
+            /* 1. Occupa il 90% della larghezza disponibile... */
+            width: 90vw;
+            max-width: 600px;
+            
+            /* 2. ...MA non superare mai l'altezza dello schermo meno lo spazio per i bottoni (circa 140px) */
+            max-height: calc(100vh - 140px);
+            
+            /* Questo garantisce che il quadrato si rimpicciolisca se lo schermo è troppo basso */
+            flex-shrink: 1; 
         }
-        svg { width: 100%; height: 100%; display: block; cursor: crosshair; }
+        svg { width: 100%; height: 100%; display: block; cursor: crosshair; border-radius: 1.5rem; }
 
-        .controls { display: flex; gap: 1.5rem; margin-top: 2rem; }
+        /* CONTROLLI STATICI (Non più fluttuanti sopra) */
+        .controls-bar {
+            /* Posizione nel flusso normale, sotto il gioco */
+            position: relative; 
+            display: flex; gap: 1.5rem;
+            background: rgba(24, 24, 27, 0.5);
+            padding: 0.8rem 2rem;
+            border-radius: 3rem;
+            border: 1px solid #27272a;
+            flex-shrink: 0; /* Impedisce che i bottoni si schiaccino */
+        }
+
         .btn-icon {
-            background: transparent; border: 1px solid #44403c; color: var(--text-dim);
-            width: 4rem; height: 4rem; border-radius: 50%;
+            background: transparent; border: none; color: var(--dim);
+            width: 3.5rem; height: 3.5rem; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
         }
-        .btn-icon:active { transform: scale(0.92); background: #292524; color: var(--accent); border-color: var(--accent); }
-        .btn-icon svg { width: 1.8rem; height: 1.8rem; pointer-events: none; }
+        .btn-icon:active { transform: scale(0.85); }
+        .btn-icon:hover { color: var(--text); background: #27272a; }
+        .btn-icon svg { width: 1.8rem; height: 1.8rem; pointer-events: none; stroke-width: 2px; }
+        
+        #btn-hint:hover { color: var(--hint); }
+        #btn-next:hover { color: var(--success); }
 
+        /* OVERLAYS */
         .overlay {
             position: absolute; inset: 0;
-            background: rgba(12, 10, 9, 0.95);
-            backdrop-filter: blur(4px);
+            background: rgba(9, 9, 11, 0.95);
+            backdrop-filter: blur(8px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
-            border-radius: 1rem; z-index: 20; padding: 2rem; text-align: center;
+            border-radius: 1.5rem; z-index: 50; padding: 2rem; text-align: center;
         }
         .overlay.active { opacity: 1; pointer-events: auto; }
         
         .btn-main {
-            background: var(--accent); color: #000; border: none;
-            padding: 1rem 2.5rem; font-weight: bold; border-radius: 2rem;
-            cursor: pointer; margin-top: 1.5rem; font-family: inherit;
+            background: var(--success); color: #000; border: none;
+            padding: 1rem 3rem; font-weight: bold; border-radius: 2rem;
+            cursor: pointer; margin-top: 2rem; font-family: inherit;
             text-transform: uppercase; letter-spacing: 0.1em;
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.4);
             transition: transform 0.2s;
         }
         .btn-main:active { transform: scale(0.95); }
 
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 10px var(--success); } 100% { opacity: 0.8; } }
-        .node-complete { animation: pulse 3s infinite ease-in-out; }
+        /* ANIMAZIONI */
+        @keyframes pulse-success { 0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); } }
+        .node-complete { stroke: var(--success); fill: #0f172a; animation: pulse-success 2s infinite; }
+        
+        @keyframes hint-pulse { 0% { opacity: 0; stroke-width: 2; } 50% { opacity: 1; stroke-width: 4; } 100% { opacity: 0; stroke-width: 2; } }
+        .hint-line { stroke: var(--hint); stroke-dasharray: 8 4; animation: hint-pulse 1.5s infinite; }
     </style>
 </head>
 <body>
-
-    <h1>NEXUS</h1>
-    <div id="status" class="status"><div class="status-dot"></div><span id="status-msg">SISTEMA ONLINE</span></div>
 
     <div id="game-container" class="game-board">
         <svg id="canvas" viewBox="0 0 360 360"></svg>
         
         <!-- WIN SCREEN -->
         <div id="win-overlay" class="overlay">
-            <h2 style="margin:0; font-size: 1.8rem; letter-spacing: 0.1em; color:white; margin-bottom: 1rem;">SINCRONIZZATO</h2>
-            <div style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;">&#10003;</div>
-            <button id="btn-next" class="btn-main">Prossimo Livello</button>
-        </div>
-
-        <!-- HELP SCREEN -->
-        <div id="help-overlay" class="overlay">
-            <h3 style="color:var(--accent); letter-spacing: 0.2em; margin-bottom: 1.5rem;">PROTOCOLLO</h3>
-            <ul style="text-align: left; font-size: 0.85rem; color: #d6d3d1; line-height: 2; list-style: none; padding:0; margin:0;">
-                <li>⦿ Unisci i nodi (Orizz/Vert)</li>
-                <li>⦿ <strong>Ripeti il gesto</strong> per ponte doppio</li>
-                <li>⦿ Numero = ponti totali</li>
-                <li>⦿ Clicca <strong>al centro</strong> della linea per cancellare</li>
-            </ul>
-            <button id="btn-close-help" class="btn-main" style="background:#292524; color:white; box-shadow:none; border:1px solid #44403c; margin-top:2rem;">Chiudi</button>
+            <svg style="width: 100px; height: 100px; color: var(--success); margin-bottom:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <h2 style="margin:0; font-size: 2rem; letter-spacing: 0.2em; color:white; font-weight: 300;">COMPLETO</h2>
+            <button id="btn-next-win" class="btn-main">Prossimo</button>
         </div>
     </div>
 
-    <div class="controls">
-        <button id="btn-reset" class="btn-icon" title="Ricomincia">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+    <div class="controls-bar">
+        <button id="btn-reset" class="btn-icon" title="Reset Plancia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         </button>
-        <button id="btn-help" class="btn-icon" title="Aiuto">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <button id="btn-hint" class="btn-icon" title="Suggerimento">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>
+        </button>
+        <button id="btn-next" class="btn-icon" title="Nuovo Livello">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
         </button>
     </div>
 
@@ -129,65 +140,79 @@
             CELL: 50,
             PAD: 30,
             SIZE: 360,
-            NODE_RADIUS: 18,
-            CLICK_TOLERANCE: 22
+            NODE_RADIUS: 20, 
+            HIT_RADIUS: 28 
         };
 
         class NexusGame {
             constructor() {
                 this.svg = document.getElementById('canvas');
-                this.statusMsg = document.getElementById('status-msg');
-                this.statusBox = document.getElementById('status');
+                this.winOverlay = document.getElementById('win-overlay');
                 
                 this.level = [];
                 this.bridges = [];
+                this.hint = null; 
                 this.drag = { active: false, start: null, curr: null, target: null, valid: false };
 
                 this.svg.addEventListener('pointerdown', e => this.handleDown(e));
                 window.addEventListener('pointermove', e => this.handleMove(e));
                 window.addEventListener('pointerup', e => this.handleUp(e));
                 
-                document.getElementById('btn-reset').onclick = () => this.restart();
+                document.getElementById('btn-reset').onclick = () => this.resetBoard();
                 document.getElementById('btn-next').onclick = () => this.newLevel();
-                document.getElementById('btn-help').onclick = () => document.getElementById('help-overlay').classList.add('active');
-                document.getElementById('btn-close-help').onclick = () => document.getElementById('help-overlay').classList.remove('active');
+                document.getElementById('btn-next-win').onclick = () => this.newLevel();
+                document.getElementById('btn-hint').onclick = () => this.triggerHint();
 
                 this.newLevel();
             }
 
-            // --- GENERATORE DI LIVELLI ---
-            generate() {
-                let bestLevel = null;
-                // Generiamo più opzioni e teniamo quella più bilanciata
-                for(let k=0; k<10; k++) {
-                    const candidate = this.tryGenerateBoard();
-                    if(candidate) {
-                        // Preferiamo livelli tra 7 e 10 nodi per un buon passatempo
-                        if(!bestLevel || (candidate.nodes.length >= 7 && candidate.nodes.length <= 10)) {
-                            bestLevel = candidate;
+            // --- HINT SYSTEM ---
+            triggerHint() {
+                this.hint = null;
+                const incompleteNodes = this.level.filter(n => {
+                    let cur = 0;
+                    this.bridges.forEach(b => { if(b.from===n.id || b.to===n.id) cur+=b.count; });
+                    return cur < n.req;
+                });
+
+                if(incompleteNodes.length > 0) {
+                    incompleteNodes.sort(() => Math.random() - 0.5);
+                    for(let src of incompleteNodes) {
+                        const targets = this.level.filter(dst => dst !== src && this.isPathClear(src, dst, this.level, this.bridges));
+                        for(let dst of targets) {
+                            let dstCur = 0;
+                            this.bridges.forEach(b => { if(b.from===dst.id || b.to===dst.id) dstCur+=b.count; });
+                            if(dstCur < dst.req) {
+                                this.hint = { p1: this.coord(src), p2: this.coord(dst), active: true };
+                                setTimeout(() => { this.hint = null; this.render(); }, 3000);
+                                this.render();
+                                return;
+                            }
                         }
                     }
                 }
-                
-                if(bestLevel) {
-                    this.level = bestLevel.nodes;
-                } else {
-                    // Fallback di sicurezza
-                    this.level = [{x:1,y:1,req:2,id:'a'},{x:5,y:1,req:2,id:'b'},{x:1,y:5,req:2,id:'c'},{x:5,y:5,req:2,id:'d'}];
+                this.render();
+            }
+
+            // --- LEVEL GEN ---
+            generate() {
+                let bestLevel = null;
+                for(let k=0; k<10; k++) {
+                    const candidate = this.tryGenerateBoard();
+                    if(candidate && (!bestLevel || (candidate.nodes.length >= 7 && candidate.nodes.length <= 12))) {
+                        bestLevel = candidate;
+                    }
                 }
+                this.level = bestLevel ? bestLevel.nodes : this.getFallbackLevel();
             }
 
             tryGenerateBoard() {
                 let nodes = [];
-                // 1. Griglia
-                for(let y=0; y<CONFIG.GRID; y++) {
-                    for(let x=0; x<CONFIG.GRID; x++) {
-                        if(Math.random() > 0.60) nodes.push({x, y, id: `${x}-${y}`, req: 0});
-                    }
+                for(let y=0; y<CONFIG.GRID; y++) for(let x=0; x<CONFIG.GRID; x++) {
+                    if(Math.random() > 0.60) nodes.push({x, y, id: `${x}-${y}`, req: 0});
                 }
                 if(nodes.length < 6) return null;
 
-                // 2. Connetti tutto (Albero di copertura)
                 let connected = [nodes[0]];
                 let pool = nodes.slice(1);
                 let solutionBridges = []; 
@@ -196,15 +221,12 @@
                     let possibleMoves = [];
                     for(let c of connected) {
                         for(let p of pool) {
-                            if(this.isPathClear(c, p, nodes, solutionBridges)) {
-                                possibleMoves.push({src:c, dst:p});
-                            }
+                            if(this.isPathClear(c, p, nodes, solutionBridges)) possibleMoves.push({src:c, dst:p});
                         }
                     }
-                    if(possibleMoves.length === 0) return null; // Fallito
+                    if(possibleMoves.length === 0) return null;
                     
                     const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-                    // Mix di singoli e doppi ponti per rendere possibili numeri alti
                     const count = Math.random() > 0.65 ? 2 : 1;
                     
                     solutionBridges.push({p1: move.src, p2: move.dst, count: count});
@@ -212,19 +234,14 @@
                     pool = pool.filter(n => n !== move.dst);
                 }
 
-                // 3. Aggiungi complessità (Cicli extra)
-                let attempts = 0;
-                while(attempts < 20) {
-                    attempts++;
+                for(let i=0; i<4; i++) {
                     const n1 = nodes[Math.floor(Math.random()*nodes.length)];
                     const n2 = nodes[Math.floor(Math.random()*nodes.length)];
-                    
                     if(n1 !== n2 && this.isPathClear(n1, n2, nodes, solutionBridges)) {
                         solutionBridges.push({p1: n1, p2: n2, count: 1});
                     }
                 }
 
-                // 4. Calcola requisiti
                 nodes.forEach(n => {
                     n.req = 0;
                     solutionBridges.forEach(b => { if(b.p1===n || b.p2===n) n.req += b.count; });
@@ -233,36 +250,37 @@
                 return { nodes: nodes.filter(n => n.req > 0 && n.req <= 8) };
             }
 
-            // --- LOGICA ---
-            isPathClear(n1, n2, allNodes, currentBridges) {
+            getFallbackLevel() {
+                return [{x:1,y:1,req:2,id:'a'},{x:5,y:1,req:2,id:'b'},{x:1,y:5,req:2,id:'c'},{x:5,y:5,req:2,id:'d'}];
+            }
+
+            isPathClear(n1, n2, allNodes, bridges) {
                 if(n1.x !== n2.x && n1.y !== n2.y) return false;
-                
                 const minX=Math.min(n1.x,n2.x), maxX=Math.max(n1.x,n2.x);
                 const minY=Math.min(n1.y,n2.y), maxY=Math.max(n1.y,n2.y);
 
-                // Ostacoli (Nodi)
                 for(let n of allNodes) {
                     if(n===n1 || n===n2) continue;
                     if(n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY && (n.x===n1.x || n.y===n1.y)) return false;
                 }
                 
-                // Ostacoli (Ponti)
-                for(let b of currentBridges) {
-                    // Se stiamo controllando lo stesso ponte che vogliamo aggiornare, NON è un ostacolo!
-                    // (Logica cruciale per permettere i doppi ponti)
-                    if((b.p1===n1 && b.p2===n2) || (b.p1===n2 && b.p2===n1)) continue;
+                for(let b of bridges) {
+                    if('p1' in b) { 
+                        if((b.p1===n1 && b.p2===n2) || (b.p1===n2 && b.p2===n1)) continue;
+                    } else { 
+                        if((b.from===n1.id && b.to===n2.id) || (b.from===n2.id && b.to===n1.id)) continue;
+                    }
 
-                    // Altrimenti check normale incroci
-                    if(this.intersects(n1, n2, b.p1, b.p2)) return false;
+                    const bp1 = 'p1' in b ? b.p1 : this.level.find(n=>n.id===b.from);
+                    const bp2 = 'p2' in b ? b.p2 : this.level.find(n=>n.id===b.to);
+
+                    if(this.intersects(n1, n2, bp1, bp2)) return false;
                     
-                    // Check sovrapposizione colineare
-                    if((n1.x===n2.x && b.p1.x===b.p2.x && n1.x===b.p1.x) || 
-                       (n1.y===n2.y && b.p1.y===b.p2.y && n1.y===b.p1.y)) {
+                    if((n1.x===n2.x && bp1.x===bp2.x && n1.x===bp1.x) || (n1.y===n2.y && bp1.y===bp2.y && n1.y===bp1.y)) {
                         const s1_min = n1.x===n2.x ? minY : minX;
                         const s1_max = n1.x===n2.x ? maxY : maxX;
-                        const s2_min = b.p1.x===b.p2.x ? Math.min(b.p1.y,b.p2.y) : Math.min(b.p1.x,b.p2.x);
-                        const s2_max = b.p1.x===b.p2.x ? Math.max(b.p1.y,b.p2.y) : Math.max(b.p1.x,b.p2.x);
-                        
+                        const s2_min = bp1.x===bp2.x ? Math.min(bp1.y,bp2.y) : Math.min(bp1.x,bp2.x);
+                        const s2_max = bp1.x===bp2.x ? Math.max(bp1.y,bp2.y) : Math.max(bp1.x,bp2.x);
                         if(Math.max(s1_min, s2_min) < Math.min(s1_max, s2_max)) return false;
                     }
                 }
@@ -270,17 +288,13 @@
             }
 
             intersects(a, b, c, d) {
-                let v1 = a.x===b.x;
-                let v2 = c.x===d.x;
+                let v1 = a.x===b.x, v2 = c.x===d.x;
                 if(v1 === v2) return false;
-
                 let x1=Math.min(a.x,b.x), x2=Math.max(a.x,b.x), y1=Math.min(a.y,b.y), y2=Math.max(a.y,b.y);
                 let x3=Math.min(c.x,d.x), x4=Math.max(c.x,d.x), y3=Math.min(c.y,d.y), y4=Math.max(c.y,d.y);
-
                 return v1 ? (x1>x3 && x1<x4 && y3>y1 && y3<y2) : (x3>x1 && x3<x2 && y1>y3 && y1<y4);
             }
 
-            // --- INPUT ---
             getPos(e) {
                 const rect = this.svg.getBoundingClientRect();
                 return { 
@@ -292,35 +306,27 @@
             handleDown(e) {
                 const pos = this.getPos(e);
                 
-                // 1. PRIORITÀ TRASCINAMENTO (Nodi)
                 for(let n of this.level) {
                     const p = this.coord(n);
-                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.CLICK_TOLERANCE) {
+                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
                         this.drag = { active: true, start: n.id, curr: pos, target: null, valid: false };
-                        this.setStatus("TRASCINA...", "ok");
-                        this.render();
-                        return; 
+                        this.hint = null; 
+                        this.render(); return; 
                     }
                 }
 
-                // 2. CANCELLAZIONE (Solo se clicchi lontano dai nodi)
                 for(let i=0; i<this.bridges.length; i++) {
                     const b = this.bridges[i];
-                    const n1 = this.level.find(n=>n.id===b.from);
-                    const n2 = this.level.find(n=>n.id===b.to);
+                    const n1 = this.level.find(n=>n.id===b.from), n2 = this.level.find(n=>n.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     
-                    const l2 = (p1.x-p2.x)**2 + (p1.y-p2.y)**2;
-                    let t = ((pos.x-p1.x)*(p2.x-p1.x) + (pos.y-p1.y)*(p2.y-p1.y)) / l2;
+                    const lenSq = (p1.x-p2.x)**2 + (p1.y-p2.y)**2;
+                    let t = ((pos.x-p1.x)*(p2.x-p1.x) + (pos.y-p1.y)*(p2.y-p1.y)) / lenSq;
                     
-                    // FIX CRUCIALE: Ignora i click vicini agli estremi (i nodi)
-                    // Accetta solo click nella fascia centrale (20% - 80%) del ponte
                     if (t < 0.2 || t > 0.8) continue;
 
                     const proj = { x: p1.x + t*(p2.x-p1.x), y: p1.y + t*(p2.y-p1.y) };
-                    const dist = Math.sqrt((pos.x-proj.x)**2 + (pos.y-proj.y)**2);
-                    
-                    if(dist < 15) { 
+                    if(Math.hypot(pos.x-proj.x, pos.y-proj.y) < 20) { 
                         if(b.count===2) b.count=1; else this.bridges.splice(i,1);
                         this.render(); this.checkWin(); return;
                     }
@@ -336,87 +342,60 @@
                 for(let n of this.level) {
                     if(n.id === this.drag.start) continue;
                     const p = this.coord(n);
-                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.CLICK_TOLERANCE) {
+                    if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
                         target = n.id; break;
                     }
                 }
 
                 let valid = false;
-                let msg = "CERCA UN NODO";
-                
                 if(target) {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const dst = this.level.find(x=>x.id===target);
-                    // Converti i ponti attuali in oggetti nodo per il check
-                    const currentBridgesAsObjects = this.bridges.map(b => ({
+                    const curBridgesObj = this.bridges.map(b => ({
                         p1: this.level.find(x=>x.id===b.from),
                         p2: this.level.find(x=>x.id===b.to)
                     }));
-                    if(this.isPathClear(src, dst, this.level, currentBridgesAsObjects)) {
-                        valid = true; msg = "RILASCIA PER CONNETTERE";
-                    } else {
-                        msg = "PERCORSO OSTRUITO";
-                    }
+                    if(this.isPathClear(src, dst, this.level, curBridgesObj)) valid = true;
                 } else {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
-                    if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) msg="ORIZZONTALE...";
-                    else msg="VERTICALE...";
+                    if(Math.abs(pos.x-p.x) > Math.abs(pos.y-p.y)) pos.y = p.y; else pos.x = p.x;
                 }
 
                 this.drag.target = target;
                 this.drag.valid = valid;
-                this.setStatus(msg, valid ? "ok" : (target ? "err" : ""));
                 this.render();
             }
 
             handleUp(e) {
                 if(!this.drag.active) return;
-                
                 if(this.drag.valid && this.drag.target) {
                     const [id1, id2] = [this.drag.start, this.drag.target].sort();
                     const ex = this.bridges.find(b => b.from===id1 && b.to===id2);
-                    
-                    if(ex) {
-                        // UPGRADE a Doppio ponte (non rimuove più, solo upgrade)
-                        if(ex.count===1) ex.count=2; 
-                        // Se è già 2, non fa nulla (o rimuove? Meglio non rimuovere trascinando per evitare errori)
-                    } else {
-                        this.bridges.push({from:id1, to:id2, count:1});
-                    }
+                    if(ex) { if(ex.count===1) ex.count=2; }
+                    else { this.bridges.push({from:id1, to:id2, count:1}); }
                 }
-                
                 this.drag.active = false;
-                this.setStatus("SISTEMA ONLINE", "");
                 this.render();
                 this.checkWin();
             }
 
-            // RENDERING
             coord(n) { return { x: n.x * CONFIG.CELL + CONFIG.PAD, y: n.y * CONFIG.CELL + CONFIG.PAD }; }
-            
-            setStatus(txt, type) {
-                this.statusMsg.textContent = txt;
-                this.statusBox.className = "status " + (type || "");
-            }
 
             render() {
                 let h = '';
                 
-                // Griglia
                 for(let y=0; y<CONFIG.GRID; y++) for(let x=0; x<CONFIG.GRID; x++) {
                     const p = this.coord({x,y});
-                    h += `<circle cx="${p.x}" cy="${p.y}" r="1" fill="#44403c"/>`;
+                    h += `<circle cx="${p.x}" cy="${p.y}" r="1" fill="#27272a"/>`;
                 }
 
-                // Ponti
                 this.bridges.forEach(b => {
                     const n1 = this.level.find(x=>x.id===b.from);
                     const n2 = this.level.find(x=>x.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     const off = 3;
                     
-                    // Hitbox invisibile (Solo centrale per cancellazione sicura)
                     h += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="transparent" stroke-width="20" stroke-linecap="round"/>`;
                     
                     if(b.count === 1) {
@@ -428,7 +407,10 @@
                     }
                 });
 
-                // Linea di trascinamento
+                if(this.hint && this.hint.active) {
+                    h += `<line x1="${this.hint.p1.x}" y1="${this.hint.p1.y}" x2="${this.hint.p2.x}" y2="${this.hint.p2.y}" class="hint-line" stroke-width="3"/>`;
+                }
+
                 if(this.drag.active) {
                     const src = this.level.find(x=>x.id===this.drag.start);
                     const p = this.coord(src);
@@ -439,31 +421,27 @@
                         const t = this.level.find(x=>x.id===this.drag.target);
                         end = this.coord(t);
                         color = this.drag.valid ? "#22d3ee" : "#ef4444";
-                    } else {
-                        if(Math.abs(end.x-p.x) > Math.abs(end.y-p.y)) end.y = p.y; else end.x = p.x;
                     }
                     h += `<line x1="${p.x}" y1="${p.y}" x2="${end.x}" y2="${end.y}" stroke="${color}" stroke-width="2" stroke-dasharray="5,5"/>`;
                 }
 
-                // Nodi
                 this.level.forEach(n => {
                     const p = this.coord(n);
                     let cur = 0;
                     this.bridges.forEach(b => { if(b.from===n.id || b.to===n.id) cur+=b.count; });
                     
-                    let fill="#1c1917", stroke="#57534e", r=CONFIG.NODE_RADIUS;
-                    let cls = "";
+                    let fill="#18181b", stroke="#52525b", r=CONFIG.NODE_RADIUS, cls="";
 
-                    if(cur===n.req) { fill="#083344"; stroke="#0891b2"; cls="node-complete"; } 
-                    else if(cur>n.req) { fill="#450a0a"; stroke="#ef4444"; } 
+                    if(cur===n.req) { cls="node-complete"; } 
+                    else if(cur>n.req) { stroke="#ef4444"; fill="#3f1313"; } 
 
                     if(this.drag.active) {
                         if(n.id===this.drag.start) { stroke="#fbbf24"; }
-                        if(n.id===this.drag.target) { r=22; }
+                        if(n.id===this.drag.target) { r=20; }
                     }
 
                     h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="2" class="${cls}"/>`;
-                    h += `<text x="${p.x}" y="${p.y}" dy="5" text-anchor="middle" fill="${cur===n.req?'#22d3ee':'#d6d3d1'}" font-weight="bold" font-size="14" pointer-events="none">${n.req}</text>`;
+                    h += `<text x="${p.x}" y="${p.y}" dy="7" text-anchor="middle" fill="${cur===n.req?'#000':'#a1a1aa'}" font-weight="bold" font-size="20" pointer-events="none">${n.req}</text>`;
                 });
 
                 this.svg.innerHTML = h;
@@ -485,21 +463,21 @@
                 }
                 
                 if(vis.size === this.level.length) {
-                    document.getElementById('win-overlay').classList.add('active');
+                    this.winOverlay.classList.add('active');
                 }
             }
 
-            restart() {
+            resetBoard() {
                 this.bridges = [];
                 this.render();
-                document.getElementById('win-overlay').classList.remove('active');
+                this.winOverlay.classList.remove('active');
             }
 
             newLevel() {
                 this.bridges = [];
                 this.generate();
                 this.render();
-                document.getElementById('win-overlay').classList.remove('active');
+                this.winOverlay.classList.remove('active');
             }
         }
 
