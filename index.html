@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS - Advanced Interaction</title>
+    <title>NEXUS - Logic Coach</title>
     <style>
         /* THEME CONFIG */
         :root { 
@@ -40,13 +40,16 @@
             font-weight: 300; line-height: 1.2;
         }
         .status-bar {
-            font-size: 0.8rem; letter-spacing: 0.05em; color: var(--dim);
+            font-size: 0.75rem; letter-spacing: 0.05em; color: var(--dim);
             text-transform: uppercase; font-weight: bold;
             display: flex; align-items: center; justify-content: center; gap: 0.5em;
-            margin-top: 0.5rem; min-height: 1.5em;
+            margin-top: 0.5rem; min-height: 2em; /* Spazio per 2 righe se serve */
             transition: color 0.3s;
+            text-align: center;
+            max-width: 90%;
+            margin-left: auto; margin-right: auto;
         }
-        .status-dot { width: 6px; height: 6px; background: var(--dim); border-radius: 50%; transition: 0.3s; }
+        .status-dot { width: 6px; height: 6px; background: var(--dim); border-radius: 50%; flex-shrink: 0; transition: 0.3s; }
         
         /* Stati Status Bar */
         .status-bar.ok { color: var(--success); }
@@ -129,10 +132,14 @@
         }
         .node-error { stroke: var(--error); fill: #3f1313; }
         
-        /* Hint Animation */
-        @keyframes hint-pulse { 0% { stroke-width: 2; stroke-opacity:0.5; } 50% { stroke-width: 5; stroke-opacity:1; } 100% { stroke-width: 2; stroke-opacity:0.5; } }
-        .node-hint { stroke: var(--hint) !important; animation: hint-pulse 1s infinite; }
+        /* Hint Animations */
+        @keyframes hint-pulse-guide { 0% { stroke-width: 2; stroke-opacity:0.5; } 50% { stroke-width: 5; stroke-opacity:1; } 100% { stroke-width: 2; stroke-opacity:0.5; } }
+        .node-hint-guide { stroke: var(--hint) !important; animation: hint-pulse-guide 1.5s infinite; }
         
+        @keyframes hint-pulse-error { 0% { stroke-width: 2; } 50% { stroke-width: 6; } 100% { stroke-width: 2; } }
+        .node-hint-err { stroke: var(--error) !important; fill: #3f1313 !important; animation: hint-pulse-error 0.8s infinite; }
+        .bridge-hint-err { stroke: var(--error) !important; stroke-width: 6 !important; stroke-opacity: 0.8 !important; animation: hint-pulse-error 0.8s infinite; }
+
     </style>
 </head>
 <body>
@@ -157,7 +164,7 @@
         <button id="btn-reset" class="btn-icon" title="Reset Plancia">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         </button>
-        <button id="btn-hint" class="btn-icon" title="Suggerimento">
+        <button id="btn-hint" class="btn-icon" title="Suggerimento (Coach)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>
         </button>
         <button id="btn-next" class="btn-icon" title="Nuovo Livello">
@@ -184,11 +191,10 @@
                 
                 this.level = [];
                 this.bridges = [];
-                this.solution = []; // Memorizza la soluzione generata per gli hint
-                this.hintState = null; // { targetNodeId, message }
+                this.solution = []; 
+                this.hintState = null; // { type: 'error'|'guide', nodes: [], bridges: [], message: "" }
                 this.drag = { active: false, start: null, curr: null, target: null, valid: false };
 
-                // Event Listeners
                 this.svg.addEventListener('pointerdown', e => this.handleDown(e));
                 window.addEventListener('pointermove', e => this.handleMove(e));
                 window.addEventListener('pointerup', e => this.handleUp(e));
@@ -201,65 +207,126 @@
                 this.newLevel();
             }
 
-            // --- AI HINT SYSTEM ---
+            // --- COACH LOGIC (HINTS) ---
             provideHint() {
                 this.hintState = null;
                 
-                // 1. Cerca errori: Ponti che NON esistono nella soluzione
-                // O ponti con conteggio sbagliato (es. 2 invece di 1)
+                // 1. ANALISI ERRORI (Priority High)
                 for(let b of this.bridges) {
+                    // Cerca se questo ponte esiste nella soluzione
                     const solBridge = this.solution.find(s => 
                         (s.p1.id === b.from && s.p2.id === b.to) || 
                         (s.p1.id === b.to && s.p2.id === b.from)
                     );
 
-                    // Se il ponte non esiste nella soluzione OPPURE il conteggio è superiore alla soluzione
+                    // Errore se: Non esiste nella soluzione OPPURE il conteggio è eccessivo
                     if (!solBridge || b.count > solBridge.count) {
                         this.hintState = { 
-                            nodes: [b.from, b.to], 
-                            message: "COLLEGAMENTO IN ECCESSO. RIMUOVI." 
+                            type: 'error',
+                            nodes: [b.from, b.to],
+                            bridges: [b], // Evidenzia questo specifico ponte
+                            message: "COLLEGAMENTO IN ECCESSO O ERRATO. RIMUOVI." 
                         };
-                        this.setStatus(this.hintState.message, "hint-active");
-                        this.render();
+                        this.updateStatusAndRender();
+                        this.clearHintAfter(4000);
                         return;
                     }
                 }
 
-                // 2. Cerca mancanze: Nodi che hanno meno connessioni del necessario
-                // Scegliamo un nodo che nella soluzione ha un collegamento non ancora fatto
-                for(let solBridge of this.solution) {
-                    const currentBridge = this.bridges.find(b => 
-                        (b.from === solBridge.p1.id && b.to === solBridge.p2.id) ||
-                        (b.from === solBridge.p2.id && b.to === solBridge.p1.id)
-                    );
+                // 2. ANALISI LOGICA (Coach Mode)
+                // Trova nodi incompleti e suggerisci una mossa logica
+                const openNodes = this.level.filter(n => {
+                    const cur = this.getCurrentCount(n);
+                    return cur < n.req;
+                });
 
-                    // Se manca il ponte o è inferiore
-                    if (!currentBridge || currentBridge.count < solBridge.count) {
-                        // Determina quale dei due nodi suggerire (quello con più bisogno)
-                        const n1 = this.level.find(n => n.id === solBridge.p1.id);
-                        // Suggeriamo solo se il nodo non è già "pieno" (anche se in modo errato, ma quello lo copre il punto 1)
-                        // Qui assumiamo che se siamo arrivati al punto 2, non ci sono ponti "sbagliati"
+                if(openNodes.length > 0) {
+                    // Cerca il caso più "ovvio" per insegnare la tecnica
+                    
+                    for(let n of openNodes) {
+                        const neighbors = this.getValidNeighbors(n);
                         
-                        this.hintState = {
-                            nodes: [n1.id, solBridge.p2.id],
-                            message: "COLLEGAMENTO RICHIESTO QUI."
-                        };
-                        this.setStatus(this.hintState.message, "hint-active");
-                        this.render();
+                        // Caso A: Vicolo Cieco (1 solo vicino)
+                        if(neighbors.length === 1) {
+                            const target = neighbors[0];
+                            this.hintState = {
+                                type: 'guide',
+                                nodes: [n.id, target.id],
+                                message: `SCELTA OBBLIGATA: IL '${n.req}' HA SOLO UN VICINO DISPONIBILE.`
+                            };
+                            this.updateStatusAndRender(); this.clearHintAfter(5000); return;
+                        }
+
+                        // Caso B: Alta Densità (es. '4' con 2 vicini, '6' con 3 vicini)
+                        // Se req == vicini * 2, significa che TUTTI devono essere doppi
+                        if(n.req === neighbors.length * 2) {
+                            const target = neighbors[0]; // Suggeriscine uno a caso dei vicini
+                            this.hintState = {
+                                type: 'guide',
+                                nodes: [n.id, target.id],
+                                message: `ALTA DENSITÀ: UN '${n.req}' CON ${neighbors.length} VICINI RICHIEDE DOPPI PONTI OVUNQUE.`
+                            };
+                            this.updateStatusAndRender(); this.clearHintAfter(5000); return;
+                        }
+                    }
+
+                    // Caso C: Fallback Soluzione (Se nessuna logica ovvia è trovata)
+                    // Prendi un ponte mancante dalla soluzione
+                    for(let solBridge of this.solution) {
+                        const curBridge = this.bridges.find(b => 
+                            (b.from === solBridge.p1.id && b.to === solBridge.p2.id) ||
+                            (b.from === solBridge.p2.id && b.to === solBridge.p1.id)
+                        );
                         
-                        // Auto-hide dopo 4 secondi
-                        setTimeout(() => {
-                            if(this.hintState) {
-                                this.hintState = null;
-                                this.setStatus("SISTEMA ONLINE", "");
-                                this.render();
-                            }
-                        }, 4000);
-                        return;
+                        if(!curBridge || curBridge.count < solBridge.count) {
+                            this.hintState = {
+                                type: 'guide',
+                                nodes: [solBridge.p1.id, solBridge.p2.id],
+                                message: "ESPANDI LA RETE QUI PER BILANCIARE IL SISTEMA."
+                            };
+                            this.updateStatusAndRender(); this.clearHintAfter(4000); return;
+                        }
                     }
                 }
                 
                 this.setStatus("NESSUN SUGGERIMENTO DISPONIBILE", "");
+            }
+
+            getCurrentCount(node) {
+                let c = 0;
+                this.bridges.forEach(b => { if(b.from===node.id || b.to===node.id) c += b.count; });
+                return c;
+            }
+
+            getValidNeighbors(node) {
+                // Ritorna i nodi verso cui posso tracciare una linea (senza ostacoli)
+                // E che esistono nella soluzione (per non dare hint sbagliati)
+                return this.level.filter(target => {
+                    if(target === node) return false;
+                    // Mock bridges to pass format check
+                    const bridgeObjs = this.bridges.map(b => ({
+                        p1: this.level.find(x=>x.id===b.from),
+                        p2: this.level.find(x=>x.id===b.to)
+                    }));
+                    return this.isPathClear(node, target, this.level, bridgeObjs);
+                });
+            }
+
+            clearHintAfter(ms) {
+                if(this.hintTimeout) clearTimeout(this.hintTimeout);
+                this.hintTimeout = setTimeout(() => {
+                    this.hintState = null;
+                    this.setStatus("SISTEMA ONLINE", "");
+                    this.render();
+                }, ms);
+            }
+
+            updateStatusAndRender() {
+                if(this.hintState) {
+                    const style = this.hintState.type === 'error' ? 'err' : 'hint-active';
+                    this.setStatus(this.hintState.message, style);
+                }
+                this.render();
             }
 
             // --- LEVEL GEN ---
@@ -273,7 +340,7 @@
                 }
                 if (bestLevel) {
                     this.level = bestLevel.nodes;
-                    this.solution = bestLevel.bridges; // Salviamo la soluzione!
+                    this.solution = bestLevel.bridges; 
                 } else {
                     const fb = this.getFallbackLevel();
                     this.level = fb.nodes;
@@ -393,7 +460,7 @@
             handleDown(e) {
                 const pos = this.getPos(e);
                 
-                // 1. DRAG START (Priorità)
+                // 1. DRAG START
                 for(let n of this.level) {
                     const p = this.coord(n);
                     if(Math.hypot(pos.x-p.x, pos.y-p.y) < CONFIG.HIT_RADIUS) {
@@ -404,7 +471,7 @@
                     }
                 }
 
-                // 2. CLICK CANCELLAZIONE (Backup)
+                // 2. CLICK CANCELLAZIONE
                 for(let i=0; i<this.bridges.length; i++) {
                     const b = this.bridges[i];
                     const n1 = this.level.find(n=>n.id===b.from), n2 = this.level.find(n=>n.id===b.to);
@@ -450,14 +517,13 @@
                     if(this.isPathClear(src, dst, this.level, curBridgesObj)) {
                         valid = true; 
                         
-                        // Previsione azione (Cosa succederà se rilascio?)
                         const existing = this.bridges.find(b => 
                             (b.from === src.id && b.to === dst.id) || 
                             (b.from === dst.id && b.to === src.id)
                         );
                         if (!existing) msg = "CREA COLLEGAMENTO";
                         else if (existing.count === 1) msg = "RINFORZA (DOPPIO)";
-                        else msg = "RIMUOVI COLLEGAMENTI"; // Cycle 3: Delete
+                        else msg = "RIMUOVI COLLEGAMENTI"; 
                         
                     } else msg = "PERCORSO OSTRUITO";
                 } else {
@@ -501,25 +567,33 @@
             render() {
                 let h = '';
                 
+                // Grid
                 for(let y=0; y<CONFIG.GRID; y++) for(let x=0; x<CONFIG.GRID; x++) {
                     const p = this.coord({x,y});
                     h += `<circle cx="${p.x}" cy="${p.y}" r="1" fill="#27272a"/>`;
                 }
 
+                // Bridges
                 this.bridges.forEach(b => {
                     const n1 = this.level.find(x=>x.id===b.from);
                     const n2 = this.level.find(x=>x.id===b.to);
                     const p1 = this.coord(n1), p2 = this.coord(n2);
                     const off = 3;
                     
+                    // Hint Error Style for Bridge
+                    let cls = "";
+                    if(this.hintState && this.hintState.type === 'error' && this.hintState.bridges && this.hintState.bridges.includes(b)) {
+                        cls = 'class="bridge-hint-err"';
+                    }
+
                     h += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="transparent" stroke-width="20" stroke-linecap="round"/>`;
                     
                     if(b.count === 1) {
-                         h += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#06b6d4" stroke-width="4" stroke-opacity="0.6" stroke-linecap="round"/>`;
+                         h += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#06b6d4" stroke-width="4" stroke-opacity="0.6" stroke-linecap="round" ${cls}/>`;
                     } else {
                         const v = n1.x===n2.x;
-                        h += `<line x1="${v?p1.x-off:p1.x}" y1="${v?p1.y:p1.y-off}" x2="${v?p2.x-off:p2.x}" y2="${v?p2.y:p2.y-off}" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.6" stroke-linecap="round"/>`;
-                        h += `<line x1="${v?p1.x+off:p1.x}" y1="${v?p1.y:p1.y+off}" x2="${v?p2.x+off:p2.x}" y2="${v?p2.y:p2.y+off}" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.6" stroke-linecap="round"/>`;
+                        h += `<line x1="${v?p1.x-off:p1.x}" y1="${v?p1.y:p1.y-off}" x2="${v?p2.x-off:p2.x}" y2="${v?p2.y:p2.y-off}" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.6" stroke-linecap="round" ${cls}/>`;
+                        h += `<line x1="${v?p1.x+off:p1.x}" y1="${v?p1.y:p1.y+off}" x2="${v?p2.x+off:p2.x}" y2="${v?p2.y:p2.y+off}" stroke="#06b6d4" stroke-width="3" stroke-opacity="0.6" stroke-linecap="round" ${cls}/>`;
                     }
                 });
 
@@ -545,13 +619,14 @@
                     let cls = "node-base";
                     let fill="#18181b", stroke="#52525b";
 
-                    // Hint Highlight
+                    // HINT STYLES
                     if(this.hintState && this.hintState.nodes.includes(n.id)) {
-                        cls += " node-hint";
+                        if(this.hintState.type === 'error') cls += " node-hint-err";
+                        else cls += " node-hint-guide";
                     }
 
-                    if(cur===n.req) { cls="node-complete"; } 
-                    else if(cur>n.req) { cls="node-error"; } 
+                    if(cur===n.req) { cls+=" node-complete"; } 
+                    else if(cur>n.req) { cls+=" node-error"; } 
 
                     if(this.drag.active) {
                         if(n.id===this.drag.start) { stroke="#fbbf24"; }
